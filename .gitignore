@@ -1,0 +1,4 @@
+# exclude everything except a couple of dotfiles
+/.*.swp
+/chyba*
+/.pcbrc
