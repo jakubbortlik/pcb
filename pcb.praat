@@ -560,6 +560,25 @@ while !quit and !reset and demoWaitForInput()
 ;			endif
 		endfor
 
+		if demoKey$ () = "?"
+			writeInfoLine: "Keyboard shortcuts - Extracts Screen:"
+			appendInfoLine: "; - play"
+			appendInfoLine: ": - interrupt playing"
+			appendInfoLine: "h,j,k,l - move around"
+			appendInfoLine: "(Only GNU/Linux: Ctrl+h,j,k,l - move around by 5)"
+			# appendInfoLine: "(Only GNU/Linux: Ctrl+Alt+h,j,k,l - move to next by 5 and play"
+			appendInfoLine: "Shift+h,j,k,l - move to next, View & Edit and play"
+			appendInfoLine: "d - select one item"
+			appendInfoLine: "i - invert selection"
+			appendInfoLine: "u - unselect all"
+			appendInfoLine: "y - select all"
+			appendInfoLine: "v - View & Edit"
+			appendInfoLine: "V - Play + View & Edit"
+		endif
+		# "r" is the "Refresh" key
+		if demoKey$ () = "r"
+			@ExtractsScreen
+		endif
 		# "V" is the "Play + View & Edit" key
 		if demoKey$ () = "V"
 			viewAndPlay = 1
