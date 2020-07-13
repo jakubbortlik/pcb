@@ -35,10 +35,15 @@
 ################################################
 #### INITIALIZATION - LOADING SETTINGS, ETC.
 ################################################
-;writeInfoLine: "The script has started"
 
 quit = 0
 section = 1
+
+if unix = 1 or macintosh = 1
+	slash$ = "/"
+elif windows = 1
+	slash$ = "\"
+endif
 
 while !quit
 
@@ -70,7 +75,7 @@ screen6$ = "Main"
 if fileReadable (".pcbrc")
 	settings = Read from file: ".pcbrc"
 else
-	settings = Create Table with column names: ".pcbrc", 23, "variable value"
+	settings = Create Table with column names: ".pcbrc", 29, "variable value"
 	Set string value: 1, "variable", "name$"
 	Set string value: 1, "value", """John Doe"""
 	Set string value: 2, "variable", "prev_name$"
@@ -117,15 +122,22 @@ else
 	Set string value: 22, "value", "10"
 	Set string value: 23, "variable", "trimEnd"
 	Set string value: 23, "value", "10"
+	Set string value: 24, "variable", "openPreviousExtractsFolderWindows$"
+	Set string value: 24, "value", """.\"""
+	Set string value: 25, "variable", "openPreviousExtractsFolderUnix$"
+	Set string value: 25, "value", """./"""
+	Set string value: 26, "variable", "savePreviousExtractsFolderWindows$"
+	Set string value: 26, "value", """.\clean"""
+	Set string value: 27, "variable", "savePreviousExtractsFolderUnix$"
+	Set string value: 27, "value", """./clean"""
+	Set string value: 28, "variable", "finalMargin"
+	Set string value: 28, "value", "250"
+	Set string value: 29, "variable", "initialMargin"
+	Set string value: 29, "value", "150"
 endif
 
 ;show_message = 0
 
-if unix = 1 or macintosh = 1
-	slash$ = "/"
-elif windows = 1
-	slash$ = "\"
-endif
 year = number (right$ (date$ (), 4))
 
 demoWindowTitle: "Phonetic Corpus Builder"
@@ -161,16 +173,6 @@ speaker$ = "%%Nothing selected.%"
 prevSpeaker$ = "%%Nothing selected.%"
 speakerCode$ = ""
 speakerCodeScreen$ = ""
-;name$ = "Ola"
-;prev_name$ = name$
-;gender = 2
-;prev_gender = gender
-;age = 27
-;prev_age = age
-;native_language$ = "Polish"
-;prev_nat_lang$ = native_language$
-;speaker_code$ = "o"
-;prev_speaker_code$ = speaker_code$
 generate_code_automatically = 1
 
 texts = 0
@@ -215,6 +217,10 @@ extrPage = 1
 fadeIn = 20
 fadeOut = 25
 extrMarked = 0
+initialMargin = 150
+finalMargin = 250
+initial_margin = initialMargin
+final_margin = finalMargin
 
 textGridPath$ = ""
 textGrid = 0
@@ -230,17 +236,22 @@ repeated_item$ = ""
 
 selectObject: settings
 settingsRows = Get number of rows
-;writeInfoLine: "these are the settings:"
 for s to settingsRows
 	var$ = Get value: s, "variable"
 	val$ = Get value: s, "value"
-;	appendInfoLine: var$, " = ", val$
 	'var$' = 'val$'
 endfor
+if windows
+	openPreviousExtractsFolder$ = openPreviousExtractsFolderWindows$
+	savePreviousExtractsFolder$ = savePreviousExtractsFolderWindows$
+else
+	openPreviousExtractsFolder$ = openPreviousExtractsFolderUnix$
+	savePreviousExtractsFolder$ = savePreviousExtractsFolderUnix$
+endif
 
-	#############
-	### COLOURS:
-	#############
+#############
+### COLOURS:
+#############
 
 backgroundColour$ = "{0.2, 0.4, 0.5}"
 headingColour$ = "Navy"
@@ -253,9 +264,9 @@ resetButtonColour$ = "{0.5, 0.9, 0.5}"
 quitButtonColour$ = "{0.9, 0.2, 0.2}"
 
 
-	##############
-	#### BUTTONS:
-	##############
+##############
+#### BUTTONS:
+##############
 
 nButtonsMain = 6
 
@@ -437,9 +448,9 @@ label START
 @MainScreen
 
 
-	#################################
-	#### WAIT FOR USER INPUT CYCLES
-	#################################
+#################################
+#### WAIT FOR USER INPUT CYCLES
+#################################
 
 #### The main screen:
 if !section
@@ -790,36 +801,62 @@ while !quit and !reset and demoWaitForInput()
 ;		... demoKey$ () = "h")
 ;			@warning: 1, "OK", "", "o", "", "Under construction", ""
 
-		# From any screen you can go to another (texts, sound, etc.) by
-		# clicking the description instead of clicking the Back button
-		# and then selecting the particular screen from the main screen:
-		
+		elif demoClickedIn (44, 50, 91, 97) or demoKey$ () = "p"
+			@previewSettings
+
 		endif
 
-	# this enables choosing the screens by clicking at the text in the
-	# screens
-	if !buttonClicked
-		if demoClickedIn (25, 39, 28.5, 31.5) and screen != 4
+	# From any screen (except the Extracts screen (4)) you can go to another
+	# (texts, sound, etc.) by clicking the description instead of clicking the
+	# Back button and then selecting the particular screen from the main screen:
+	# Enable choosing the screens by clicking at the text in the screens.
+	if !buttonClicked and screen != 4
+		if demoClickedIn (25, 39, 28.5, 31.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "p")
 			@speakerMain
-		elif (demoClickedIn (25, 32, 23.5, 26.5) and screen != 4)
+		elif demoClickedIn (25, 32, 23.5, 26.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "t")
 			repaint = 1
 			screen = textsScreen
-		elif (demoClickedIn (25, 32, 18.5, 21.5) and screen != 4)
+		elif demoClickedIn (25, 32, 18.5, 21.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "l")
 			repaint = 1
 			screen = soundScreen
-		elif (demoClickedIn (25, 34, 13.5, 16.5) and screen != 4)
+		elif demoClickedIn (25, 34, 13.5, 16.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "e")
 			repaint = 1
 			screen = extractsScreen
-		elif (demoClickedIn (25, 35, 8.5, 11.5) and screen != 4)
+		elif demoClickedIn (25, 35, 8.5, 11.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "a")
 			repaint = 1
 			screen = annotationScreen
 		endif
 	endif
+
+	# # this enables choosing the screens by clicking at the text in the
+	# # screens
+	# if !buttonClicked
+	# 	if demoClickedIn (25, 39, 28.5, 31.5) and screen != 4
+	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "p")
+	# 		@speakerMain
+	# 	elif (demoClickedIn (25, 32, 23.5, 26.5) and screen != 4)
+	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "t")
+	# 		repaint = 1
+	# 		screen = textsScreen
+	# 	elif (demoClickedIn (25, 32, 18.5, 21.5) and screen != 4)
+	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "l")
+	# 		repaint = 1
+	# 		screen = soundScreen
+	# 	elif (demoClickedIn (25, 34, 13.5, 16.5) and screen != 4)
+	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "e")
+	# 		repaint = 1
+	# 		screen = extractsScreen
+	# 	elif (demoClickedIn (25, 35, 8.5, 11.5) and screen != 4)
+	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "a")
+	# 		repaint = 1
+	# 		screen = annotationScreen
+	# 	endif
+	# endif
 
 	# repaint the screen only if another screen is chosen or something
 	# has changed which should be shown in the screen
@@ -922,9 +959,9 @@ endwhile
 
 goto FINISHED
 
-	#######################
-	#### SCREEN PROCEDURES
-	#######################
+#######################
+#### SCREEN PROCEDURES
+#######################
 if !section
 {
 endif
@@ -1189,10 +1226,16 @@ procedure ExtractsScreen
 	demo Draw rounded rectangle: 13, 19, 8, 14, 3
 	demo Text special: 16, "centre", 11, "half", "Helvetica", 15, "0", "#%Quit"
 
+	# The "settings" button:
+	demo Paint rounded rectangle: mainButtonColour$, 44, 50, 91, 97, 3
+	demo Draw rounded rectangle: 44, 50, 91, 97, 3
+	demo Text special: 47, "centre", 95, "half", "Helvetica", 12, "0", "#%Preview"
+	demo Text special: 47, "centre", 93, "half", "Helvetica", 12, "0", "settings"
+
 	extrPage = floor (extrClicked / 100.1) + 1
 	maxItemsOnPage = extrPage * 100
 
-	# this writes out the extracts if there are any
+	# Write out the extracts if there are any.
 	if extracts > 0
 		extrItems = nExtracts
 		demo Paint rectangle: "{0.4, 0.6, 0.7}", colX - ((colHor * 4)) - 0.25, colX + 0.25, colY - 75.5, colY + 0.5
@@ -1209,11 +1252,8 @@ procedure ExtractsScreen
 ;				endif
 				if extrItems > (maxItemsOnPage + 25) - (.c * 25)
 					extrItems = (maxItemsOnPage + 25) - (.c * 25)
-;				else
-;					extrItems = 
 				endif
 
-;				for .i from (100 - (.c * 25) + 1) to extrItems
 				for .i from (maxItemsOnPage - (.c * 25) + 1) to extrItems
 
 					.x = colX - (.c * colHor)
@@ -1241,7 +1281,7 @@ procedure ExtractsScreen
 		endfor
 	endif
 
-	# this paints the sound wave and 100 ms lines
+	# Paint the sound wave and 100 ms lines.
 	if extrClicked > 0
 		extrName$ = extracts'extrClicked'$
 		extrName$ = replace$ (extrName$, "_", "\_ ", 0)
@@ -1267,18 +1307,18 @@ procedure ExtractsScreen
 			demo Draw line: (extrStep * .s), 0.0, (extrStep * .s), -5
 		endfor
 
-		# this draws a line 250 ms from the end of the recording to see if the
+		# Draw a line 250 ms from the end of the recording to see if the
 		# recording will have enough silence at the end, so that it is played
 		# correctly with external media players:
 		demo Dashed line
 		demo Red
 		demo Line width: 0.5
-		demo Draw line: 100 - (extrStep * 2.5), 100.0, 100 - (extrStep * 2.5), 0.0
-		demo Draw line: (extrStep * 1.5), 100.0, (extrStep * 1.5), 0.0
+		demo Draw line: 100 - (extrStep * final_margin / 100), 100.0, 100 - (extrStep * final_margin / 100), 0.0
+		demo Draw line: (extrStep * initial_margin / 100), 100.0, (extrStep * initial_margin / 100), 0.0
 		demo Solid line
 		demo Black
 
-		# this draws the sound wave
+		# Draw the sound wave.
 		demo Line width: 0.75
 		demo Draw: 0, 0, 0, 0, "yes", "Curve"
 
@@ -1288,17 +1328,17 @@ procedure ExtractsScreen
 
 	endif
 
-	# this writes and draws the selected item:
+	# Write and draw the selected item.
 	for .c to 4
 		if extrClicked > (maxItemsOnPage - (.c * 25)) and extrClicked < ((maxItemsOnPage + 26) - (.c * 25))
 			.x = colX - (.c * colHor)
 			.y = colY - (3 * (extrClicked - (maxItemsOnPage - (.c * 25))))
 			demo White
 
-			# the background of the selected item
+			# Paint the background of the selected item.
 			demo Paint rectangle: "{0.2, 0.4, 0.5}", .x, .x + colHor, .y, .y + colVert
 
-			# the check box
+			# Paint the check box.
 			demo Paint rectangle: "{1, 1, 1}", .x + 0.25, .x + 1.2, .y + 1.1, .y - 0.6 + colVert
 			demo Text special: colTextX - (.c * colHor), "left", colTextY - (3 * (extrClicked - (maxItemsOnPage - (.c * 25) + 1))), "half", "Helvetica", 10, "0", "\O.  'extrClicked'. 'extrName$'.wav"
 			if extracts'extrClicked'marked = 1
@@ -1398,9 +1438,9 @@ procedure AnnotationScreen
 endproc
 
 
-	#####################
-	#### OTHER PROCEDURES
-	#####################
+#####################
+#### OTHER PROCEDURES
+#####################
 
 if !section
 {
@@ -2482,6 +2522,55 @@ endproc
 #### EXTRACTS PROCEDURES
 #########################
 
+procedure previewSettings
+	label PREVIEW_SETTINGS_AGAIN
+
+	beginPause: "Choose preview settings"
+		comment: "Select the initial and final margin (dashed lines) in
+		... milliseconds."
+		comment: "(Values between 0-1000, defaults are 150 and 250 ms, respectively.)"
+		real: "Initial margin (ms)", initialMargin
+		real: "Final margin (ms)", finalMargin
+		boolean: "Save preview settings", 0
+	clicked = endPause: "Cancel", "Continue", 2, 1
+	if clicked = 1
+		goto PREVIEW_SETTINGS_CANCEL
+	endif
+
+	# Force the Initial and Final margins into sensible values.
+	if initial_margin < 0
+		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Initial margin cannot be negative:",
+		... """'initial_margin'"""
+		if warningOption$ = "AGAIN"
+			goto PREVIEW_SETTINGS_AGAIN
+		else
+			goto PREVIEW_SETTINGS_CANCEL
+		endif
+	elsif initial_margin > 1000
+		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Initial margin cannot be greater than 1000:",
+		... """'initial_margin'"""
+		if warningOption$ = "AGAIN"
+			goto PREVIEW_SETTINGS_AGAIN
+		else
+			goto PREVIEW_SETTINGS_CANCEL
+		endif
+	endif
+
+	if save_preview_settings = 1
+		selectObject: settings
+		col = Search column: "variable", "initialMargin"
+		Set numeric value: col, "value", initial_margin
+		initialMargin = initial_margin
+		col = Search column: "variable", "finalMargin"
+		Set numeric value: col, "value", final_margin
+		finalMargin = final_margin
+		selectObject: settings
+		Save as text file: ".pcbrc"
+	endif
+
+	label PREVIEW_SETTINGS_CANCEL
+endproc
+
 if !section
 {
 endif
@@ -2513,10 +2602,43 @@ procedure openExtracts
 		prevExtracts$ = extracts$
 	endif
 
-	extractsFolder$ = chooseDirectory$: "Choose a directory to open short
-	... extracts from"
-	if extractsFolder$ = ""
+	beginPause: "Do you want to use previous extracts folder?"
+		comment: "Do you want to use the previous extracts folder:"
+		folderLength = length (openPreviousExtractsFolder$) 
+		if folderLength > 80
+			comment: left$ (openPreviousExtractsFolder$, 80) + "..."
+			comment: "..." + right$ (openPreviousExtractsFolder$,
+			... folderLength - 80) + "?"
+		else
+			comment: openPreviousExtractsFolder$ + "?"
+		endif
+		comment: "Do you want to save new extracts folder name?"
+		boolean: "Save extracts folder name", 1
+	clicked = endPause: "Cancel", "Use previous", "Choose new", 2, 1
+	if clicked = 1
 		goto OPEN_EXTRACTS_CANCEL
+	elsif clicked = 3
+		extractsFolder$ = chooseDirectory$: "Choose a directory to open short
+		... extracts from"
+		if extractsFolder$ = ""
+			goto OPEN_EXTRACTS_CANCEL
+		endif
+	else
+		extractsFolder$ = openPreviousExtractsFolder$
+	endif
+
+	if save_extracts_folder_name = 1
+		openPreviousExtractsFolder$ = extractsFolder$
+		selectObject: settings
+		if unix
+			variable$ = "openPreviousExtractsFolderUnix$"
+		else
+			variable$ = "openPreviousExtractsFolderWindows$"
+		endif
+		col = Search column: "variable", "'variable$'"
+		Set string value: col, "value", """'openPreviousExtractsFolder$'"""
+		selectObject: settings
+		Save as text file: ".pcbrc"
 	endif
 
 	.folderContents = Create Strings as file list: "extractsFolderContents",
@@ -3071,8 +3193,47 @@ procedure saveExtracts
 		# Save the objects according to the list produced byt the @textToNumbers
 		# procedure:
 		if .items > 0
-			.directory$ = chooseDirectory$: "Choose a directory to save the
-			... files in"
+			beginPause: "Do you want to use previous extracts folder?"
+				comment: "Do you want to use the previous extracts folder:"
+				folderLength = length (savePreviousExtractsFolder$) 
+				if folderLength > 80
+					comment: left$ (savePreviousExtractsFolder$, 80) + "..."
+					comment: "..." + right$ (savePreviousExtractsFolder$,
+					... folderLength - 80) + "?"
+				else
+					comment: savePreviousExtractsFolder$ + "?"
+				endif
+				comment: "Do you want to save new extracts folder name?"
+				boolean: "Save extracts folder name", 1
+			clicked = endPause: "Cancel", "Use previous", "Choose new", 2, 1
+			if clicked = 1
+				goto SAVE_EXTRACTS_CANCEL
+			elsif clicked = 3
+				.directory$ = chooseDirectory$: "Choose a directory to save the
+				... files in"
+				if extractsFolder$ = ""
+					goto SAVE_EXTRACTS_CANCEL
+				endif
+			else
+				.directory$ = savePreviousExtractsFolder$
+			endif
+
+			if save_extracts_folder_name = 1
+				savePreviousExtractsFolder$ = .directory$
+				selectObject: settings
+				if unix
+					variable$ = "savePreviousExtractsFolderUnix$"
+				else
+					variable$ = "savePreviousExtractsFolderWindows$"
+				endif
+				col = Search column: "variable", "'variable$'"
+				Set string value: col, "value", """'savePreviousExtractsFolder$'"""
+				selectObject: settings
+				Save as text file: ".pcbrc"
+			endif
+
+			# .directory$ = chooseDirectory$: "Choose a directory to save the
+			# ... files in"
 			if .directory$ <> ""
 				for i to .items
 					va = .value'i'
