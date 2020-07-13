@@ -13,5 +13,6 @@ You can try running the script in Praat and see what happens. The corpus builder
 can be operated with the mouse or with the keyboard (in that case I attempted to
 use some vim-like bindings: hjkl + Alt, Shift, Ctlr). At the moment, you have to
 go to the code itself to find the keybindings, or just play with the app with
-some data you are not worried of losing.
-
+some data you are not afraid to lose. In the Extracts screen you can bring up a
+help a list of shortcuts by pressing "?" (in other words "Shift-/") on the
+keyboard.
