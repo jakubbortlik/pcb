@@ -134,7 +134,25 @@ else
 	Set string value: 28, "value", "250"
 	Set string value: 29, "variable", "initialMargin"
 	Set string value: 29, "value", "150"
+	selectObject: settings
+	Save as text file: ".pcbrc"
 endif
+
+selectObject: settings
+settingsRows = Get number of rows
+for s to settingsRows
+	var$ = Get value: s, "variable"
+	val$ = Get value: s, "value"
+	'var$' = 'val$'
+endfor
+if windows
+	openPreviousExtractsFolder$ = openPreviousExtractsFolderWindows$
+	savePreviousExtractsFolder$ = savePreviousExtractsFolderWindows$
+else
+	openPreviousExtractsFolder$ = openPreviousExtractsFolderUnix$
+	savePreviousExtractsFolder$ = savePreviousExtractsFolderUnix$
+endif
+
 
 ;show_message = 0
 
@@ -217,8 +235,6 @@ extrPage = 1
 fadeIn = 20
 fadeOut = 25
 extrMarked = 0
-initialMargin = 150
-finalMargin = 250
 initial_margin = initialMargin
 final_margin = finalMargin
 
@@ -233,21 +249,6 @@ silentIL$ = "xxx"
 openWithSound = 0
 
 repeated_item$ = ""
-
-selectObject: settings
-settingsRows = Get number of rows
-for s to settingsRows
-	var$ = Get value: s, "variable"
-	val$ = Get value: s, "value"
-	'var$' = 'val$'
-endfor
-if windows
-	openPreviousExtractsFolder$ = openPreviousExtractsFolderWindows$
-	savePreviousExtractsFolder$ = savePreviousExtractsFolderWindows$
-else
-	openPreviousExtractsFolder$ = openPreviousExtractsFolderUnix$
-	savePreviousExtractsFolder$ = savePreviousExtractsFolderUnix$
-endif
 
 #############
 ### COLOURS:
@@ -1760,14 +1761,14 @@ procedure speakerMain
 		prevSpeaker$ = speaker$
 	endif
 	beginPause: "Enter speaker data"
-		word: "Name", "'name$'"
+		sentence: "Name", "'name$'"
 		optionMenu: "Gender", gender
 			option: "male"
 			option: "female"
 			option: "other"
 		integer: "Age", age
-		word: "Native language", "'native_language$'"
-		word: "Code", "'speaker_code$'"
+		sentence: "Native language", "'native_language$'"
+		sentence: "Code", "'speaker_code$'"
 		boolean: "Generate code automatically", generate_code_automatically
 		boolean: "Save speaker settings", 0
 	clicked = endPause: "Cancel", "OK", 2, 1
