@@ -2598,6 +2598,7 @@ endif
 
 procedure openExtracts
 	label OPEN_EXTRACTS_AGAIN
+	.dirInList = 0
 	label OPEN_EXTRACTS_SELECT
 	if extracts$ <> "%%Nothing selected.%"
 		prevExtracts$ = extracts$
@@ -2613,6 +2614,7 @@ procedure openExtracts
 		else
 			comment: openPreviousExtractsFolder$ + "?"
 		endif
+		word: "Previous", openPreviousExtractsFolder$
 		comment: "Do you want to save new extracts folder name?"
 		boolean: "Save extracts folder name", 1
 	clicked = endPause: "Cancel", "Use previous", "Choose new", 2, 1
@@ -2625,7 +2627,31 @@ procedure openExtracts
 			goto OPEN_EXTRACTS_CANCEL
 		endif
 	else
-		extractsFolder$ = openPreviousExtractsFolder$
+		.slashRindex = rindex (previous$, slash$)
+		.pathToDir$ = left$ (previous$, .slashRindex)
+		.dirName$ = right$ (previous$, length (previous$) - .slashRindex)
+		.dir_list = Create Strings as directory list: "directoryList", .pathToDir$
+		nDirs = Get number of strings
+		for d to nDirs
+			selectObject: .dir_list
+			d$ = Get string: d
+			if .dirName$ = d$
+				.dirInList = 1
+			endif
+		endfor
+		removeObject: .dir_list
+		if .dirInList
+			extractsFolder$ = previous$
+		else
+			.dirScreen$ = replace$ (.dirName$, "_", "\_ ", 0)
+			@warning: 2, "AGAIN", "CANCEL", "o", "c", "Folder '.dirScreen$' does",
+			... "not exist."
+			if warningOption$ = "AGAIN"
+				goto OPEN_EXTRACTS_AGAIN
+			else
+				goto OPEN_EXTRACTS_CANCEL
+			endif
+		endif
 	endif
 
 	if save_extracts_folder_name = 1
