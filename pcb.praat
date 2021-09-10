@@ -37,7 +37,6 @@
 ################################################
 
 quit = 0
-section = 1
 
 if unix = 1 or macintosh = 1
 	slash$ = "/"
@@ -154,8 +153,6 @@ else
 endif
 
 
-;show_message = 0
-
 year = number (right$ (date$ (), 4))
 
 demoWindowTitle: "Phonetic Corpus Builder"
@@ -258,6 +255,7 @@ backgroundColour$ = "{0.2, 0.4, 0.5}"
 headingColour$ = "Navy"
 subHeadingColour$ = "Olive"
 
+foreGroundColour$ = "{0.4, 0.6, 0.7}"
 warningWindowColour$ = "{0.4, 0.6, 0.7}"
 warningButtonColour$ = "{0.2, 0.4, 0.5}"
 mainButtonColour$ =  "{0.4, 0.6, 0.7}"
@@ -430,10 +428,8 @@ warningOption$ = ""
 
 if show_message = 0 or unix <> 1
 elif show_message = 1 and unix = 1
-	; settings
 	beginPause: "When starting PCB for the first time"
-		comment: "Do you want to show this message after restarting
-		... PCB?"
+		comment: "Do you want to show this message after restarting PCB?"
 		boolean: "Show message", 1
 	clicked = endPause: "Continue", 1
 	if show_message = 0
@@ -454,9 +450,6 @@ label START
 #################################
 
 #### The main screen:
-if !section
-{
-endif
 label MAIN
 while !quit and !reset and demoWaitForInput()
 	buttonClicked$ = ""
@@ -467,10 +460,8 @@ while !quit and !reset and demoWaitForInput()
 	# and to press the keys:
 	for i to nButtons'screen$'
 		if demoClickedIn (buttonX - buttonHor, buttonX + buttonHor, 100
-		... - ((i * buttonY) + buttonVert), 100 - ((i * buttonY) -
-		... buttonVert))
+		... - ((i * buttonY) + buttonVert), 100 - ((i * buttonY) - buttonVert))
 		... or (demoCommandKeyPressed () = 0 and demoKey$ () = key'screen$''i'$)
-;		... or demoKey$ () = key'screen$''i'$
 			buttonClicked = i
 			buttonClicked$ = button'screen$''i'$
 		endif
@@ -523,73 +514,58 @@ while !quit and !reset and demoWaitForInput()
 		for .c to 4
 			# extrColumns equals 1 for 1–24 extracts, 2 for 25–49 extr., 3 for 
 			# 50-74 extr., and 4 for 75-99 items
-;			if extrColumns > 3 - .c
-				for extr from (100 - (.c * 25) + 1) to extrItems
-					# select the item by clicking anywhere in its rectangle:
+			for extr from (100 - (.c * 25) + 1) to extrItems
+				# select the item by clicking anywhere in its rectangle:
+				if demoClickedIn (
+				... colX - (.c * colHor), colX - (.c * colHor) + colHor,
+				... colY - (3 * (extr - (100 - (.c * 25)))),
+				... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
+					extrClicked = extr
+
+					# play the item by clicking at the name of the item:
 					if demoClickedIn (
-					... colX - (.c * colHor), colX - (.c * colHor) + colHor,
+					... colX - (.c * colHor) + 4, colX - (.c * colHor) + 10,
 					... colY - (3 * (extr - (100 - (.c * 25)))),
 					... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
-						extrClicked = extr
+						selectObject: extracts'extr'
+						asynchronous Play
 
-						# play the item by clicking at the name of the item:
-						if demoClickedIn (
-						... colX - (.c * colHor) + 4, colX - (.c * colHor) + 10,
-						... colY - (3 * (extr - (100 - (.c * 25)))),
-						... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
-							selectObject: extracts'extr'
-							asynchronous Play
+					# view the item by clicking at the Theta symbol or number of
+					# the item:
+					elif demoClickedIn (
+					... colX - (.c * colHor) + 1.5, colX - (.c * colHor) + 3.5,
+					... colY - (3 * (extr - (100 - (.c * 25)))),
+					... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
+						selectObject: extracts'extr'
+						View & Edit
+						editor: "Sound " + extracts'extr'$
+						Move cursor to: 0
+						endeditor
 
-						# view the item by clicking at the Theta symbol or number of
-						# the item:
-						elif demoClickedIn (
-						... colX - (.c * colHor) + 1.5, colX - (.c * colHor) + 3.5,
-						... colY - (3 * (extr - (100 - (.c * 25)))),
-						... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
-							selectObject: extracts'extr'
-							View & Edit
-							editor: "Sound " + extracts'extr'$
-							Move cursor to: 0
-							endeditor
-
-						# Mark the item for batch manipulation
-						elif demoClickedIn (
-						... colX - (.c * colHor), colX - (.c * colHor) + 1.2,
-						... colY - (3 * (extr - (100 - (.c * 25)))),
-						... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
-							if extracts'extr'marked = 0
-								extracts'extr'marked = 1
-								extrMarked += 1
-							elif extracts'extr'marked = 1
-								extracts'extr'marked = 0
-								extrMarked -= 1
-							endif
+					# Mark the item for batch manipulation
+					elif demoClickedIn (
+					... colX - (.c * colHor), colX - (.c * colHor) + 1.2,
+					... colY - (3 * (extr - (100 - (.c * 25)))),
+					... colY + colVert - (3 * (extr - (100 - (.c * 25)))))
+						if extracts'extr'marked = 0
+							extracts'extr'marked = 1
+							extrMarked += 1
+						elif extracts'extr'marked = 1
+							extracts'extr'marked = 0
+							extrMarked -= 1
 						endif
-						repaint = 1
-;						goto EXTRACTS
 					endif
-				endfor
-;			endif
+					@PaintExtractsWindow: nExtracts, extrClicked
+				endif
+			endfor
 		endfor
 
 		if demoKey$ () = "?"
-			writeInfoLine: "Keyboard shortcuts - Extracts Screen:"
-			appendInfoLine: "; - play"
-			appendInfoLine: ": - interrupt playing"
-			appendInfoLine: "h,j,k,l - move around"
-			appendInfoLine: "(Only GNU/Linux: Ctrl+h,j,k,l - move around by 5)"
-			# appendInfoLine: "(Only GNU/Linux: Ctrl+Alt+h,j,k,l - move to next by 5 and play"
-			appendInfoLine: "Shift+h,j,k,l - move to next, View & Edit and play"
-			appendInfoLine: "d - select one item"
-			appendInfoLine: "i - invert selection"
-			appendInfoLine: "u - unselect all"
-			appendInfoLine: "y - select all"
-			appendInfoLine: "v - View & Edit"
-			appendInfoLine: "V - Play + View & Edit"
+			@DrawHelp
 		endif
 		# "r" is the "Refresh" key
-		if demoKey$ () = "r"
-			@ExtractsScreen
+		if demoKey$ () = "r" and extrClicked != 0
+			@PaintSoundWave: extrClicked
 		endif
 		# "V" is the "Play + View & Edit" key
 		if demoKey$ () = "V"
@@ -605,7 +581,7 @@ while !quit and !reset and demoWaitForInput()
 				extracts'extrClicked'marked = 0
 				extrMarked -= 1
 			endif
-			repaint = 1
+			@PaintExtractsWindow: nExtracts, extrClicked
 		endif
 
 		# "u" is the "unselect all" key
@@ -614,7 +590,7 @@ while !quit and !reset and demoWaitForInput()
 				extracts'b'marked = 0
 			endfor
 			extrMarked = 0
-			repaint = 1
+			@PaintExtractsWindow: nExtracts, extrClicked
 		endif
 
 		# "y" is the "select all" key
@@ -623,7 +599,7 @@ while !quit and !reset and demoWaitForInput()
 				extracts'b'marked = 1
 			endfor
 			extrMarked = nExtracts
-			repaint = 1
+			@PaintExtractsWindow: nExtracts, extrClicked
 		endif
 
 		# "i" is the "invert selection" key
@@ -637,7 +613,7 @@ while !quit and !reset and demoWaitForInput()
 					extrMarked -= 1
 				endif
 			endfor
-			repaint = 1
+			@PaintExtractsWindow: nExtracts, extrClicked
 		endif
 
 		# these if cycles enable the use of the arrow keys/"hjkl" keys to navigate
@@ -660,12 +636,11 @@ while !quit and !reset and demoWaitForInput()
 				elif demoOptionKeyPressed () = 1
 					extrClicked += 1
 					selectObject: extracts'extrClicked'
-;					@ExtractsScreen
 					asynchronous Play
 				else
 					extrClicked += 1
 				endif
-				@ExtractsScreen
+				@PaintExtractsWindow: nExtracts, extrClicked
 			elif demoKey$ () = "J" or (demoShiftKeyPressed () = 1 and demoKey$ () = "↓")
 				extrClicked += 1
 				selectObject: extracts'extrClicked'
@@ -674,7 +649,7 @@ while !quit and !reset and demoWaitForInput()
 				editor: "Sound " + extracts'extrClicked'$
 				Move cursor to: 0
 				endeditor
-				@ExtractsScreen
+				@PaintExtractsWindow: nExtracts, extrClicked
 			endif
 		endif
 
@@ -695,12 +670,11 @@ while !quit and !reset and demoWaitForInput()
 				elif demoOptionKeyPressed () = 1
 					extrClicked -= 1
 					selectObject: extracts'extrClicked'
-					@ExtractsScreen
 					asynchronous Play
 				else
 					extrClicked -= 1
 				endif
-				@ExtractsScreen
+				@PaintExtractsWindow: nExtracts, extrClicked
 			elif demoKey$ () = "K" or (demoShiftKeyPressed () = 1 and demoKey$ () = "↑")
 				extrClicked -= 1
 				selectObject: extracts'extrClicked'
@@ -709,7 +683,7 @@ while !quit and !reset and demoWaitForInput()
 				editor: "Sound " + extracts'extrClicked'$
 				Move cursor to: 0
 				endeditor
-				@ExtractsScreen
+				@PaintExtractsWindow: nExtracts, extrClicked
 			endif
 		endif
 
@@ -722,7 +696,7 @@ while !quit and !reset and demoWaitForInput()
 				else
 					extrClicked += 25
 				endif
-				@ExtractsScreen
+				@PaintExtractsWindow: nExtracts, extrClicked
 			endif
 		endif
 
@@ -731,12 +705,11 @@ while !quit and !reset and demoWaitForInput()
 				if demoOptionKeyPressed () = 1
 					extrClicked -= 25
 					selectObject: extracts'extrClicked'
-					@ExtractsScreen
 					asynchronous Play
 				else
 					extrClicked -= 25
 				endif
-				@ExtractsScreen
+				@PaintExtractsWindow: nExtracts, extrClicked
 			endif
 		endif
 
@@ -752,24 +725,11 @@ while !quit and !reset and demoWaitForInput()
 			asynchronous Play
 			Remove
 		endif
-
-	# interaction with the annotation screen:
-;	elif screen = annotationScreen
-
-		# An attempted move boundaries procedure:			
-		# The script can be added to the Boundary menu in the TextGrid Window
-		# It moves the boundaries to the selection which has to be inside the boundaries
-;		if demoKey$ () = "f"
-;			@intervalsToSelection
-;		endif
-
 	endif
 
 		# The "reset" button:
-		if demoClickedIn (5, 11, 8, 14) or (demoCommandKeyPressed () = 1 and
-		... demoKey$ () = "r")
-			if textsToSave = 1 or soundToSave = 1 or textGridToSave
-			... = 1 or extractsToSave = 1
+		if demoClickedIn (5, 11, 8, 14) or (demoCommandKeyPressed () = 1 and demoKey$ () = "r")
+			if textsToSave = 1 or soundToSave = 1 or textGridToSave = 1 or extractsToSave = 1
 				@warning: 2, "CANCEL", "RESET", "c", "r",
 				... "The object list is not empty.",
 				... "Sure you want to reset?"
@@ -783,10 +743,8 @@ while !quit and !reset and demoWaitForInput()
 			endif
 
 		# The "quit" button:
-		elif demoClickedIn (13, 19, 8, 14) or (demoCommandKeyPressed () = 1 and
-			... demoKey$ () = "q")
-			if textsToSave = 1 or soundToSave = 1 
-			... or textGridToSave = 1 or extractsToSave = 1
+		elif demoClickedIn (13, 19, 8, 14) or (demoCommandKeyPressed () = 1 and demoKey$ () = "q")
+			if textsToSave = 1 or soundToSave = 1 or textGridToSave = 1 or extractsToSave = 1
 				@warning: 2, "CANCEL", "QUIT", "c", "q",
 				... "The object list is not empty.",
 				... "Sure you want to quit?"
@@ -797,14 +755,8 @@ while !quit and !reset and demoWaitForInput()
 				quit = 1
 			endif
 
-;		# The "help" button:
-;		elif demoClickedIn (89, 95, 8, 14) or (demoCommandKeyPressed () = 0 and
-;		... demoKey$ () = "h")
-;			@warning: 1, "OK", "", "o", "", "Under construction", ""
-
-		elif demoClickedIn (44, 50, 91, 97) or demoKey$ () = "p"
+		elsif screen$ = "Extracts" and (demoClickedIn (44, 50, 91, 97) or demoKey$ () = "p")
 			@previewSettings
-
 		endif
 
 	# From any screen (except the Extracts screen (4)) you can go to another
@@ -815,11 +767,11 @@ while !quit and !reset and demoWaitForInput()
 		if demoClickedIn (25, 39, 28.5, 31.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "p")
 			@speakerMain
-		elif demoClickedIn (25, 32, 23.5, 26.5)
+		elsif demoClickedIn (25, 32, 23.5, 26.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "t")
 			repaint = 1
 			screen = textsScreen
-		elif demoClickedIn (25, 32, 18.5, 21.5)
+		elsif demoClickedIn (25, 32, 18.5, 21.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "l")
 			repaint = 1
 			screen = soundScreen
@@ -833,31 +785,6 @@ while !quit and !reset and demoWaitForInput()
 			screen = annotationScreen
 		endif
 	endif
-
-	# # this enables choosing the screens by clicking at the text in the
-	# # screens
-	# if !buttonClicked
-	# 	if demoClickedIn (25, 39, 28.5, 31.5) and screen != 4
-	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "p")
-	# 		@speakerMain
-	# 	elif (demoClickedIn (25, 32, 23.5, 26.5) and screen != 4)
-	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "t")
-	# 		repaint = 1
-	# 		screen = textsScreen
-	# 	elif (demoClickedIn (25, 32, 18.5, 21.5) and screen != 4)
-	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "l")
-	# 		repaint = 1
-	# 		screen = soundScreen
-	# 	elif (demoClickedIn (25, 34, 13.5, 16.5) and screen != 4)
-	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "e")
-	# 		repaint = 1
-	# 		screen = extractsScreen
-	# 	elif (demoClickedIn (25, 35, 8.5, 11.5) and screen != 4)
-	# 	... or (demoCommandKeyPressed () = 1 and demoKey$ () = "a")
-	# 		repaint = 1
-	# 		screen = annotationScreen
-	# 	endif
-	# endif
 
 	# repaint the screen only if another screen is chosen or something
 	# has changed which should be shown in the screen
@@ -952,10 +879,6 @@ for i to remainingItems
 	endfor
 endfor
 
-;if reset = 1
-;	buttonClicked = 0
-;endif
-
 endwhile
 
 goto FINISHED
@@ -963,9 +886,6 @@ goto FINISHED
 #######################
 #### SCREEN PROCEDURES
 #######################
-if !section
-{
-endif
 procedure MainScreen
 	demo Erase all
 	demo Select inner viewport: 0, 100,  0, 100
@@ -974,8 +894,7 @@ procedure MainScreen
 	demo Paint rectangle: backgroundColour$, 0, 100, 0, 100
 
 	demo 'headingColour$'
-	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0",
-	... "Phonetic Corpus"
+	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0", "Phonetic Corpus"
 	demo Text special: 60, "centre", 55, "half", "Helvetica", 70, "0", "Builder"
 
 	demo Black
@@ -992,16 +911,11 @@ procedure MainScreen
 		textGridScreen$ = prevTextGrid$
 	endif
 
-	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0",
-	... "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
-	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0",
-	... "##Text(s):# 'texts$'"
-	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0",
-	... "##Sound:# 'sound$' 'monoOrStereoScreen$'"
-	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0",
-	... "##Extracts:# 'extracts$'"
-	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0",
-	... "##Annotation:# 'textGridScreen$'"
+	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0", "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
+	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0", "##Text(s):# 'texts$'"
+	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0", "##Sound:# 'sound$' 'monoOrStereoScreen$'"
+	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0", "##Extracts:# 'extracts$'"
+	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0", "##Annotation:# 'textGridScreen$'"
 
 	for i to nButtonsMain
 		demo Paint rounded rectangle: mainButtonColour$, buttonX - buttonHor, buttonX
@@ -1024,16 +938,9 @@ procedure MainScreen
 	demo Paint rounded rectangle: quitButtonColour$, 13, 19, 8, 14, 3
 	demo Draw rounded rectangle: 13, 19, 8, 14, 3
 	demo Text special: 16, "centre", 11, "half", "Helvetica", 15, "0", "#%Quit"
-
-;	# The "help" button:
-;	demo Paint rounded rectangle: mainButtonColour$, 89, 95, 8, 14, 3
-;	demo Draw rounded rectangle: 89, 95, 8, 14, 3
-;	demo Text special: 92, "centre", 11, "half", "Helvetica", 15, "0", "#%Help"
 endproc
 
-if !section
-{
-endif
+
 procedure TextsScreen: 
 	demo Erase all
 	demo Select inner viewport: 0, 100,  0, 100
@@ -1045,8 +952,7 @@ procedure TextsScreen:
 	demo Text special: 25, "left", 90, "half", "Helvetica", 45, "0", "Texts"
 
 	demo 'headingColour$'
-	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0",
-	... "Phonetic Corpus"
+	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0", "Phonetic Corpus"
 	demo Text special: 60, "centre", 55, "half", "Helvetica", 70, "0", "Builder"
 
 	demo Black
@@ -1063,16 +969,11 @@ procedure TextsScreen:
 		textGridScreen$ = prevTextGrid$
 	endif
 
-	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0",
-	... "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
-	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0",
-	... "##Text(s):# 'texts$'"
-	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0",
-	... "##Sound:# 'sound$' 'monoOrStereoScreen$'"
-	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0",
-	... "##Extracts:# 'extracts$'"
-	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0",
-	... "##Annotation:# 'textGridScreen$'"
+	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0", "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
+	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0", "##Text(s):# 'texts$'"
+	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0", "##Sound:# 'sound$' 'monoOrStereoScreen$'"
+	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0", "##Extracts:# 'extracts$'"
+	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0", "##Annotation:# 'textGridScreen$'"
 
 	for i to nButtonsTexts
 		demo Paint rounded rectangle: mainButtonColour$, buttonX - buttonHor, buttonX
@@ -1095,16 +996,9 @@ procedure TextsScreen:
 	demo Paint rounded rectangle: quitButtonColour$, 13, 19, 8, 14, 3
 	demo Draw rounded rectangle: 13, 19, 8, 14, 3
 	demo Text special: 16, "centre", 11, "half", "Helvetica", 15, "0", "#%Quit"
-
-;	# The "help" button:
-;	demo Paint rounded rectangle: mainButtonColour$, 89, 95, 8, 14, 3
-;	demo Draw rounded rectangle: 89, 95, 8, 14, 3
-;	demo Text special: 92, "centre", 11, "half", "Helvetica", 15, "0", "#%Help"
 endproc
 
-if !section
-{
-endif
+
 procedure SoundScreen
 	demo Erase all
 	demo Select inner viewport: 0, 100,  0, 100
@@ -1116,8 +1010,7 @@ procedure SoundScreen
 	demo Text special: 25, "left", 90, "half", "Helvetica", 45, "0", "Long sound"
 
 	demo 'headingColour$'
-	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0",
-	... "Phonetic Corpus"
+	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0", "Phonetic Corpus"
 	demo Text special: 60, "centre", 55, "half", "Helvetica", 70, "0", "Builder"
 
 	demo Black
@@ -1134,16 +1027,11 @@ procedure SoundScreen
 		textGridScreen$ = prevTextGrid$
 	endif
 
-	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0",
-	... "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
-	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0",
-	... "##Text(s):# 'texts$'"
-	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0",
-	... "##Sound:# 'sound$' 'monoOrStereoScreen$' 'reopenedSound$'"
-	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0",
-	... "##Extracts:# 'extracts$'"
-	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0",
-	... "##Annotation:# 'textGridScreen$'"
+	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0", "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
+	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0", "##Text(s):# 'texts$'"
+	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0", "##Sound:# 'sound$' 'monoOrStereoScreen$' 'reopenedSound$'"
+	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0", "##Extracts:# 'extracts$'"
+	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0", "##Annotation:# 'textGridScreen$'"
 
 	for i to nButtonsSound
 		demo Paint rounded rectangle: mainButtonColour$, buttonX - buttonHor, buttonX
@@ -1166,16 +1054,9 @@ procedure SoundScreen
 	demo Paint rounded rectangle: quitButtonColour$, 13, 19, 8, 14, 3
 	demo Draw rounded rectangle: 13, 19, 8, 14, 3
 	demo Text special: 16, "centre", 11, "half", "Helvetica", 15, "0", "#%Quit"
-
-;	# The "help" button:
-;	demo Paint rounded rectangle: mainButtonColour$, 89, 95, 8, 14, 3
-;	demo Draw rounded rectangle: 89, 95, 8, 14, 3
-;	demo Text special: 92, "centre", 11, "half", "Helvetica", 15, "0", "#%Help"
 endproc
 
-if !section
-{
-endif
+
 procedure ExtractsScreen
 	demo Erase all
 	demo Select inner viewport: 0, 100,  0, 100
@@ -1198,24 +1079,8 @@ procedure ExtractsScreen
 		demo Draw rounded rectangle: buttonX - buttonHor, buttonX + buttonHor,
 		... 100 - ((i * buttonY) + buttonVert),
 		... 100 - ((i * buttonY) - buttonVert), 3
-		demo Text special: buttonX, "centre", 100 - (i * buttonY), "half",
-		... "Helvetica", 20, "0", labelExtracts'i'$
+		demo Text special: buttonX, "centre", 100 - (i * buttonY), "half", "Helvetica", 20, "0", labelExtracts'i'$
 	endfor
-
-;	# The "help" button:
-;	demo Paint rounded rectangle: mainButtonColour$, 3, 8.5, 8, 14, 3
-;	demo Draw rounded rectangle: 3, 8.5, 8, 14, 3
-;	demo Text special: 5.75, "centre", 11, "half", "Helvetica", 15, "0", "#%Help"
-;
-;	# The "reset" button:
-;	demo Paint rounded rectangle: resetButtonColour$, 9.5, 14.5, 8, 14, 3
-;	demo Draw rounded rectangle: 9.5, 14.5, 8, 14, 3
-;	demo Text special: 12, "centre", 11, "half", "Helvetica", 15, "0", "#%Reset";
-;
-;	# The "quit" button:
-;	demo Paint rounded rectangle: quitButtonColour$, 15.5, 21, 8, 14, 3
-;	demo Draw rounded rectangle: 15.5, 21, 8, 14, 3
-;	demo Text special: 18.25, "centre", 11, "half", "Helvetica", 15, "0", "#%Quit"
 
 	# The "reset" button:
 	demo Paint rounded rectangle: resetButtonColour$, 5, 11, 8, 14, 3
@@ -1233,130 +1098,17 @@ procedure ExtractsScreen
 	demo Text special: 47, "centre", 95, "half", "Helvetica", 12, "0", "#%Preview"
 	demo Text special: 47, "centre", 93, "half", "Helvetica", 12, "0", "settings"
 
-	extrPage = floor (extrClicked / 100.1) + 1
-	maxItemsOnPage = extrPage * 100
-
-	# Write out the extracts if there are any.
 	if extracts > 0
-		extrItems = nExtracts
-		demo Paint rectangle: "{0.4, 0.6, 0.7}", colX - ((colHor * 4)) - 0.25, colX + 0.25, colY - 75.5, colY + 0.5
-		demo Black
-		if extrPages > 1
-			demo Text special: 25, "left", 78, "bottom", "Helvetica", 15, "0", "< 'extrPage' / 'extrPages' >"
-		endif
-
-		# for 4 columns with at most 25 items each:
-		for .c to 4
-;			if extrColumns > 3 - .c
-;				if extrItems > 125 - (.c * 25)
-;					extrItems = 125 - (.c * 25)
-;				endif
-				if extrItems > (maxItemsOnPage + 25) - (.c * 25)
-					extrItems = (maxItemsOnPage + 25) - (.c * 25)
-				endif
-
-				for .i from (maxItemsOnPage - (.c * 25) + 1) to extrItems
-
-					.x = colX - (.c * colHor)
-					.y = colY - (3 * (.i - (maxItemsOnPage - (.c * 25))))
-
-					demo Paint rectangle: "{1, 1, 1}",
-					... colX - (.c * colHor) + 0.25, colX - (.c * colHor) + 1.2,
-					... colY - (3 * (.i - (maxItemsOnPage - (.c * 25)))) + 1.1, colY + colVert - (3 * (.i - (maxItemsOnPage - (.c * 25)))) - 0.6
-					if extracts'.i'marked = 1
-
-						demo Draw line: .x + 0.3, .y + 1.1, .x + 1.2, .y - 0.65 + colVert
-						demo Draw line: .x + 0.3, .y - 0.65 + colVert, .x + 1.2, .y + 1.1
-
-;						demo Draw line: 
-;						... colX - (.c * colHor) + 0.25, colY - (3 * (.i - (maxItemsOnPage - (.c * 25)))) + 1.1, colX - (.c * colHor) + 1.2, colY + colVert - (3 * (.i - (maxItemsOnPage - (.c * 25)))) - 0.6
-;						demo Draw line: 
-;						... colX - (.c * colHor) + 0.25, colY + colVert - (3 * (.i - (maxItemsOnPage - (.c * 25)))) - 0.6, colX - (.c * colHor) + 1.2, colY - (3 * (.i - (maxItemsOnPage - (.c * 25)))) + 1.1
-					endif
-
-					extrName$ = extracts'.i'$
-					extrName$ = replace$ (extrName$, "_", "\_ ", 0)
-					demo Text special: colTextX - (.c * colHor), "left", colTextY - (3 * (.i - (maxItemsOnPage - (.c * 25) + 1))), "half", "Helvetica", 10, "0", "\O.  '.i'. 'extrName$'.wav"
-				endfor
-;			endif
-		endfor
+		@PaintExtracts: nExtracts, extrClicked
 	endif
 
 	# Paint the sound wave and 100 ms lines.
 	if extrClicked > 0
-		extrName$ = extracts'extrClicked'$
-		extrName$ = replace$ (extrName$, "_", "\_ ", 0)
-
-		selectObject: extracts'extrClicked'
-		extrDur = Get total duration
-		if extrDur < 10
-			.lines = 10
-			.steps = 0.1
-		else
-			.lines = 100
-			.steps = 1
-		endif
-		extrStep = .lines / extrDur
-
-		demo Select inner viewport: 53, 97, 83, 97
-		demo Axes: 0, 100, 0, 100
-		demo Paint rectangle: "{0.4, 0.6, 0.7}", 0, 100, 0, 100
-
-		nSteps = floor (extrDur / .steps)
-		for .s to nSteps
-			demo Line width: 1.0
-			demo Draw line: (extrStep * .s), 0.0, (extrStep * .s), -5
-		endfor
-
-		# Draw a line 250 ms from the end of the recording to see if the
-		# recording will have enough silence at the end, so that it is played
-		# correctly with external media players:
-		demo Dashed line
-		demo Red
-		demo Line width: 0.5
-		demo Draw line: 100 - (extrStep * final_margin / 100), 100.0, 100 - (extrStep * final_margin / 100), 0.0
-		demo Draw line: (extrStep * initial_margin / 100), 100.0, (extrStep * initial_margin / 100), 0.0
-		demo Solid line
-		demo Black
-
-		# Draw the sound wave.
-		demo Line width: 0.75
-		demo Draw: 0, 0, 0, 0, "yes", "Curve"
-
-		demo Select inner viewport: 0, 100,  0, 100
-		demo Axes: 0, 100, 0, 100
-		demo Line width: 2.0
-
+		@PaintSoundWave: extrClicked
 	endif
-
-	# Write and draw the selected item.
-	for .c to 4
-		if extrClicked > (maxItemsOnPage - (.c * 25)) and extrClicked < ((maxItemsOnPage + 26) - (.c * 25))
-			.x = colX - (.c * colHor)
-			.y = colY - (3 * (extrClicked - (maxItemsOnPage - (.c * 25))))
-			demo White
-
-			# Paint the background of the selected item.
-			demo Paint rectangle: "{0.2, 0.4, 0.5}", .x, .x + colHor, .y, .y + colVert
-
-			# Paint the check box.
-			demo Paint rectangle: "{1, 1, 1}", .x + 0.25, .x + 1.2, .y + 1.1, .y - 0.6 + colVert
-			demo Text special: colTextX - (.c * colHor), "left", colTextY - (3 * (extrClicked - (maxItemsOnPage - (.c * 25) + 1))), "half", "Helvetica", 10, "0", "\O.  'extrClicked'. 'extrName$'.wav"
-			if extracts'extrClicked'marked = 1
-				demo Black
-				demo Draw line: .x + 0.3, .y + 1.1, .x + 1.2, .y - 0.65 + colVert
-				demo Draw line: .x + 0.3, .y - 0.65 + colVert, .x + 1.2, .y + 1.1
-			endif
-		endif
-	endfor
-
-	demo Black
-
 endproc
 
-if !section
-{
-endif
+
 procedure AnnotationScreen
 	demo Erase all
 	demo Select inner viewport: 0, 100,  0, 100
@@ -1365,12 +1117,10 @@ procedure AnnotationScreen
 	demo Paint rectangle: backgroundColour$, 0, 100, 0, 100
 
 	demo 'subHeadingColour$'
-	demo Text special: 25, "left", 90, "half", "Helvetica", 45, "0",
-	... "Annotation"
+	demo Text special: 25, "left", 90, "half", "Helvetica", 45, "0", "Annotation"
 
 	demo 'headingColour$'
-	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0",
-	... "Phonetic Corpus"
+	demo Text special: 60, "centre", 70, "half", "Helvetica", 60, "0", "Phonetic Corpus"
 	demo Text special: 60, "centre", 55, "half", "Helvetica", 70, "0", "Builder"
 
 	demo Black
@@ -1387,16 +1137,11 @@ procedure AnnotationScreen
 		textGridScreen$ = prevTextGrid$
 	endif
 
-	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0",
-	... "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
-	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0",
-	... "##Text(s):# 'texts$'"
-	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0",
-	... "##Sound:# 'sound$' 'monoOrStereoScreen$'"
-	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0",
-	... "##Extracts:# 'extracts$'"
-	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0",
-	... "##Annotation:# 'textGridScreen$'"
+	demo Text special: 25, "left", 28, "bottom", "Helvetica", 15, "0", "##Speaker (code):# 'speaker$' 'speakerCodeScreen$'"
+	demo Text special: 25, "left", 23, "bottom", "Helvetica", 15, "0", "##Text(s):# 'texts$'"
+	demo Text special: 25, "left", 18, "bottom", "Helvetica", 15, "0", "##Sound:# 'sound$' 'monoOrStereoScreen$'"
+	demo Text special: 25, "left", 13, "bottom", "Helvetica", 15, "0", "##Extracts:# 'extracts$'"
+	demo Text special: 25, "left", 8, "bottom", "Helvetica", 15, "0", "##Annotation:# 'textGridScreen$'"
 
 	for i to nButtonsAnnotation
 		demo Paint rounded rectangle: mainButtonColour$, buttonX - buttonHor, buttonX
@@ -1410,18 +1155,6 @@ procedure AnnotationScreen
 		... "Helvetica", 20, "0", labelAnnotation'i'$
 	endfor
 
-;	for i to rButtonsAnnotation
-;		demo Paint rounded rectangle: mainButtonColour$, rButtonX - rButtonHor, rButtonX
-;		... + rButtonHor,
-;		... 100 - ((i * rButtonY) + rButtonVert),
-;		... 100 - ((i * rButtonY) - rButtonVert), 3
-;		demo Draw rounded rectangle: rButtonX - rButtonHor, rButtonX + rButtonHor,
-;		... 100 - ((i * rButtonY) + rButtonVert),
-;		... 100 - ((i * rButtonY) - rButtonVert), 3
-;		demo Text special: rButtonX, "centre", 100 - (i * rButtonY), "half",
-;		... "Helvetica", rLabelSize, "0", rLabelAnnotation'i'$
-;	endfor
-
 	# The "reset" button:
 	demo Paint rounded rectangle: resetButtonColour$, 5, 11, 8, 14, 3
 	demo Draw rounded rectangle: 5, 11, 8, 14, 3
@@ -1431,11 +1164,6 @@ procedure AnnotationScreen
 	demo Paint rounded rectangle: quitButtonColour$, 13, 19, 8, 14, 3
 	demo Draw rounded rectangle: 13, 19, 8, 14, 3
 	demo Text special: 16, "centre", 11, "half", "Helvetica", 15, "0", "#%Quit"
-
-;	# The "help" button:
-;	demo Paint rounded rectangle: mainButtonColour$, 89, 95, 8, 14, 3
-;	demo Draw rounded rectangle: 89, 95, 8, 14, 3
-;	demo Text special: 92, "centre", 11, "half", "Helvetica", 15, "0", "#%Help"
 endproc
 
 
@@ -1443,9 +1171,7 @@ endproc
 #### OTHER PROCEDURES
 #####################
 
-if !section
-{
-endif
+
 procedure markedToString
 	select$ = ""
 	.prevRange = 0
@@ -1467,29 +1193,28 @@ procedure markedToString
 	endfor
 endproc
 
-if !section
-{
-endif
 
 procedure backTexts
 	screen = mainScreen
 endproc
+
+
 procedure backSound
 	screen = mainScreen
 endproc
+
+
 procedure backExtracts
 	screen = mainScreen
 endproc
+
+
 procedure backAnnotation
 	screen = mainScreen
 endproc
 
-if !section
-{
-endif
 
-procedure warning: .nButtons, .label1$, .label2$, .key1$, .key2$, .line1$,
-... .line2$
+procedure warning: .nButtons, .label1$, .label2$, .key1$, .key2$, .line1$, .line2$
 	warningOption$ = ""
 	.key1$ = left$ (.label1$, 1)
 	.key1$ = replace_regex$ (.key1$, ".*", "\L&", 0)
@@ -1505,8 +1230,7 @@ procedure warning: .nButtons, .label1$, .label2$, .key1$, .key2$, .line1$,
 		.x = 64 - (b * 12)
 		demo Paint rounded rectangle: warningButtonColour$, .x, .x + 8, 40, 45, 1
 		demo Draw rounded rectangle: .x, .x + 8, 40, 45, 1
-		demo Text special: .x + 4, "centre", 42.5, "half", "Helvetica", 15, "0",
-		... .label'b'$
+		demo Text special: .x + 4, "centre", 42.5, "half", "Helvetica", 15, "0", .label'b'$
 	endfor
 
 	while warningOption$ = "" and demoWaitForInput ()
@@ -1521,9 +1245,6 @@ procedure warning: .nButtons, .label1$, .label2$, .key1$, .key2$, .line1$,
 	@'screen$'Screen
 endproc
 
-if !section
-{
-endif
 
 procedure textToNumbers: .source$, .text$, .max, .noValue
 	# Place the labels XXXX_AGAIN and XXXX_CANCEL at the appropriate positions
@@ -1593,15 +1314,6 @@ procedure textToNumbers: .source$, .text$, .max, .noValue
 					... "object Nr '.value'"
 					'.source$'.label$ = warningOption$
 					goto TEXT_TO_NUMBERS_END
-
-# if working the following can be deleted
-;					if warningOption$ = "CANCEL"
-;						'.source$'.label$ = "CANCEL"
-;						goto TEXT_TO_NUMBERS_END
-;					else
-;						'.source$'.label$ = "AGAIN"
-;						goto TEXT_TO_NUMBERS_END
-;					endif
 				endif
 			else
 				.length = length (.nor'n'$)
@@ -1676,9 +1388,6 @@ procedure textToNumbers: .source$, .text$, .max, .noValue
 	label TEXT_TO_NUMBERS_END
 endproc
 
-if !section
-{
-endif
 
 procedure textToStrings: .source$, .text$
 	# Place the labels XXXX_AGAIN and XXXX_CANCEL at the appropriate positions
@@ -1740,9 +1449,6 @@ procedure textToStrings: .source$, .text$
 	label TEXT_TO_STRINGS_END
 endproc
 
-if !section
-{
-endif
 
 procedure reverse: .input$, .output$
 	'.output$' = ""
@@ -1752,9 +1458,6 @@ procedure reverse: .input$, .output$
 	endfor
 endproc
 
-if !section
-{
-endif
 
 procedure speakerMain
 	if speaker$ <> "%%Nothing selected.%"
@@ -1807,9 +1510,6 @@ procedure speakerMain
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure saveMain
 	if textGrid <> 0 and sound <> 0 and texts <> 0
@@ -1828,11 +1528,9 @@ procedure saveMain
 			recording = 0
 			text_file = 0
 			
-;			goto SAVE_CANCEL
 		endif
 		if annotation = 1
-			fileSave$ = chooseWriteFile$: "Save as text file",
-			... "'soundNoExt$'.TextGrid"
+			fileSave$ = chooseWriteFile$: "Save as text file", "'soundNoExt$'.TextGrid"
 			if fileSave$ <> ""
 				selectObject: textGrid
 				Save as text file: fileSave$
@@ -1855,8 +1553,7 @@ procedure saveMain
 			endif
 		endif
 	elif textGrid <> 0 and sound = 0 and texts <> 0
-		fileSave$ = chooseWriteFile$: "Save as text file",
-		... "'soundNoExt$'.TextGrid"
+		fileSave$ = chooseWriteFile$: "Save as text file", "'soundNoExt$'.TextGrid"
 		if fileSave$ <> ""
 			selectObject: textGrid
 			Save as text file: fileSave$
@@ -1876,10 +1573,6 @@ endproc
 #####################
 #### TEXTS PROCEDURES
 #####################
-
-if !section
-{
-endif
 
 procedure openTexts
 	label OPEN_TEXTS_AGAIN
@@ -1936,9 +1629,6 @@ procedure openTexts
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure inspectTexts
 	if texts = 0
@@ -1957,9 +1647,6 @@ procedure inspectTexts
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure modifyTexts
 	label MODIFY_TEXTS_AGAIN
@@ -2026,8 +1713,7 @@ procedure modifyTexts
 				textsToSave = 1
 			endif
 			if word_to_insert$ <> ""
-				Set string value: row_to_insert, column_for_insertion$,
-				... word_to_insert$
+				Set string value: row_to_insert, column_for_insertion$, word_to_insert$
 				textsToSave = 1
 			endif
 		endif
@@ -2051,9 +1737,6 @@ procedure modifyTexts
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure saveTexts
 	if texts <> 0
@@ -2074,8 +1757,7 @@ procedure saveTexts
 			.extension$ = ".txt"
 		endif
 		textsNoExt$ = textsPath$ - right$ (textsPath$, 4)
-		fileSave$ = chooseWriteFile$: "Save as text file",
-		... "'textsNoExt$''.extension$'"
+		fileSave$ = chooseWriteFile$: "Save as text file", "'textsNoExt$''.extension$'"
 		if fileSave$ <> "" and format_of_text$ = "text_file"
 			Save as text file: fileSave$
 		elif fileSave$ <> "" and format_of_text$ = "tab-separated file"
@@ -2094,10 +1776,6 @@ endproc
 ######################
 #### SOUND PROCEDURES
 ######################
-
-if !section
-{
-endif
 
 procedure openSound
 	label OPEN_SOUND_AGAIN
@@ -2180,8 +1858,7 @@ procedure openSound
 			reopenedSound$ = "(reopened)"
 		endif
 
-		if fileReadable (soundFolder$ + slash$ + soundNoExt$ + ".TextGrid") and
-		... !textGrid and !reopen
+		if fileReadable (soundFolder$ + slash$ + soundNoExt$ + ".TextGrid") and !textGrid and !reopen
 			textGridPath$ = soundFolder$ + slash$ + soundNoExt$ + ".TextGrid"
 			openWithSound = 1
 			@openAnnotation
@@ -2196,9 +1873,6 @@ procedure openSound
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure viewSound
 	if sound = 0
@@ -2215,9 +1889,6 @@ procedure viewSound
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure extractSound
 	if sound = 0
@@ -2308,8 +1979,7 @@ procedure extractSound
 			endTime = Get end point: tier_to_extract, extract'int'
 			extLabel$ = Get label of interval: tier_to_extract, extract'int'
 
-			if repeated_item$ <> "" and index (right$ (extLabel$, 3),
-			... repeated_item$) <> 0
+			if repeated_item$ <> "" and index (right$ (extLabel$, 3), repeated_item$) <> 0
 				rep$ = right$ (extLabel$, 3)
 				extLabel$ = "'extLabel$'" - rep$ + extSpeaker$ + rep$
 			else
@@ -2337,9 +2007,6 @@ procedure extractSound
 	label EXTRACT_SOUND_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure convertSound
 	label CONVERT_SOUND_AGAIN
@@ -2364,14 +2031,11 @@ procedure convertSound
 		beginPause: "Convert sound files"
 			comment: "Convert the original file to 'oppositeMOS$'?"
 			boolean: "Convert to 'oppositeMOS$'", 0
-;			comment: "Convert the original file to mp3?"
-;			boolean: "Convert to mp3", 0
 			comment: "Select a new name for the file:"
 			word: "Name of 'oppositeMOS$'", "'soundNoExt$'_'oppositeMOS$'"
 			comment: "Convert extracted sound files?"
 			boolean: "Extracted files to mp3", 0
-			comment: "For the conversion, the originally extracted .wav files
-			... have to be saved."
+			comment: "For the conversion, the originally extracted .wav files have to be saved."
 			comment: "Do you want to discard these .wav files after conversion?"
 			boolean: "Discard extracted wav", 0
 			comment: "Select the bit rate:"
@@ -2392,8 +2056,7 @@ procedure convertSound
 	endif
 	
 	if convert_to_'oppositeMOS$' = 1 and fileReadable (soundPath$)
-		.originalDirectoryName$ = chooseDirectory$: "Choose a directory to save
-		... the converted long sound file in"
+		.originalDirectoryName$ = chooseDirectory$: "Choose a directory to save the converted long sound file in"
 		if .originalDirectoryName$ = ""
 			goto CONVERT_SOUND_CANCEL
 		endif
@@ -2402,10 +2065,8 @@ procedure convertSound
 		'monoOrStereo$'Sound = Read from file: "'soundPath$'"
 		'oppositeMOS$'Sound = Convert to 'oppositeMOS$'
 		name_of_new_file$ = name_of_'oppositeMOS$'$
-;		if .originalDirectoryName$ <> ""
-			soundPath$ = "'.originalDirectoryName$'/'name_of_new_file$'.wav"
-			Save as WAV file: "'soundPath$'"
-;		endif
+		soundPath$ = "'.originalDirectoryName$'/'name_of_new_file$'.wav"
+		Save as WAV file: "'soundPath$'"
 		selectObject: 'oppositeMOS$'Sound
 		plusObject: 'monoOrStereo$'Sound
 		Remove
@@ -2437,8 +2098,7 @@ procedure convertSound
 
 	label CONVERT_SOUND_EXTRACTED_FILES_OPENED
 	if extracted_files_to_mp3 = 1 and nExtracts <> 0
-		extractsFolder$ = chooseDirectory$: "Choose a directory to save the
-		... converted extracted files in"
+		extractsFolder$ = chooseDirectory$: "Choose a directory to save the converted extracted files in"
 		if extractsFolder$ <> ""
 			for i to nExtracts
 				selectObject: extracts'i'
@@ -2447,13 +2107,9 @@ procedure convertSound
 				.out$ = "'extractsFolder$''slash$''.extWavTemp$'.mp3"
 				Save as WAV file: "'extractsFolder$''slash$''.extWavTemp$'.wav"
 				if unix = 1 or macintosh = 1
-					system lame -h -V 2 --resample 'sampling_rate$' --tt
-					... '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$'
-					... '.out$'
+					system lame -h -V 2 --resample 'sampling_rate$' --tt '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$' '.out$'
 				elif windows = 1
-					system .\lame\lame.exe -h -V 2 --resample 'sampling_rate$'
-					... --tt '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$'
-					... '.out$'
+					system .\lame\lame.exe -h -V 2 --resample 'sampling_rate$' --tt '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$' '.out$'
 				endif
 				if discard_extracted_wav = 1
 					deleteFile (.path$)
@@ -2473,9 +2129,6 @@ procedure convertSound
 	label CONVERT_SOUND_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure saveSound
 	if sound <> 0
@@ -2490,8 +2143,7 @@ procedure saveSound
 
 		if original_long_sound_file = 1
 			selectObject: sound
-			fileSave$ = chooseWriteFile$: "Save as WAV file",
-			... "'soundNoExt$'.wav"
+			fileSave$ = chooseWriteFile$: "Save as WAV file", "'soundNoExt$'.wav"
 			if fileSave$ <> ""
 				Save as WAV file: fileSave$
 			endif
@@ -2502,8 +2154,7 @@ procedure saveSound
 				... save."
 				goto SAVE_SOUND_CANCEL
 			endif
-			.directory$ = chooseDirectory$: "Choose a directory to save all
-			... the new files in"
+			.directory$ = chooseDirectory$: "Choose a directory to save all the new files in"
 			if .directory$ <> ""
 				for n to nExtracts
 					selectObject: extracts'n'
@@ -2523,33 +2174,155 @@ endproc
 #### EXTRACTS PROCEDURES
 #########################
 
+procedure PaintSoundWave: .markedExtr
+	selectObject: extracts'.markedExtr'
+	.extrDur = Get total duration
+	if .extrDur < 10
+		.lines = 10
+		.steps = 0.1
+	else
+		.lines = 100
+		.steps = 1
+	endif
+	.extrStep = .lines / .extrDur
+
+	# Select the Sound Wave viewport
+	demo Select inner viewport: 53, 97, 83, 97
+	demo Axes: 0, 100, 0, 100
+
+	# Repaint the Sound Wave window
+	demo Paint rectangle: backgroundColour$, -5, 115, -10, 115
+	demo Paint rectangle: foreGroundColour$, 0, 100, 0, 100
+
+	# Draw the 100 ms lines
+	nSteps = floor (.extrDur / .steps)
+	for .s to nSteps
+		demo Line width: 1.0
+		demo Draw line: (.extrStep * .s), 0.0, (.extrStep * .s), -5
+	endfor
+
+	# Draw lines at start and end of the recording to see if the
+	# recording will have enough silence at the end, so that it is played
+	# correctly with external media players:
+	demo Red
+	demo Line width: 0.5
+
+	if (final_margin + initial_margin < (1000 * .extrDur * 0.85))
+		if final_margin > 0
+			demo Text special: 100 - (.extrStep * final_margin / 100), "centre", 102, "bottom", "Helvetica", 10, "0", string$(final_margin) + " ms from end"
+			demo Draw line: 100 - (.extrStep * final_margin / 100), 100.0, 100 - (.extrStep * final_margin / 100), 0.0
+		endif
+		if initial_margin > 0
+			demo Text special: (.extrStep * initial_margin / 100), "centre", 102, "bottom", "Helvetica", 10, "0", string$(initial_margin) + " ms from start"
+			demo Draw line: (.extrStep * initial_margin / 100), 100.0, (.extrStep * initial_margin / 100), 0.0
+		endif
+	else
+		demo Text special: 50, "centre", 102, "bottom", "Helvetica", 10, "0", "Margins too close"
+	endif
+
+	demo Black
+
+	# Draw the sound wave.
+	demo Line width: 0.75
+	demo Draw: 0, 0, 0, 0, "yes", "Curve"
+
+	demo Select inner viewport: 0, 100,  0, 100
+	demo Axes: 0, 100, 0, 100
+	demo Line width: 2.0
+endproc
+
+procedure PaintExtractsWindow: .extrItems, .markedExtr
+	@PaintSoundWave: .markedExtr
+	@PaintExtracts: nExtracts, .markedExtr
+endproc
+
+# Write out the extracts if there are any and highlight the selected one.
+procedure PaintExtracts: .extrItems, .markedExtr
+	demo Black
+	extrPage = floor (.markedExtr / 100.1) + 1
+	maxItemsOnPage = extrPage * 100
+	if extrPages > 1
+		demo Paint rectangle: backgroundColour$, colX - ((colHor * 4)) - 0.25, colX - ((colHor * 4)) + 5, colY, colY + 3
+		demo Text special: 25, "left", 78, "bottom", "Helvetica", 15, "0", "< 'extrPage' / 'extrPages' >"
+	endif
+	demo Paint rectangle: foreGroundColour$, colX - ((colHor * 4)) - 0.25, colX + 0.25, colY - 75.5, colY + 0.5
+
+	# for 4 columns with at most 25 items each:
+	for .c to 4
+		if .extrItems > (maxItemsOnPage + 25) - (.c * 25)
+			.extrItems = (maxItemsOnPage + 25) - (.c * 25)
+			extrItems = .extrItems
+		endif
+
+		for .i from (maxItemsOnPage - (.c * 25) + 1) to .extrItems
+
+			.x = colX - (.c * colHor)
+			.y = colY - (3 * (.i - (maxItemsOnPage - (.c * 25))))
+
+			demo Paint rectangle: "{1, 1, 1}",
+			... colX - (.c * colHor) + 0.25, colX - (.c * colHor) + 1.2,
+			... colY - (3 * (.i - (maxItemsOnPage - (.c * 25)))) + 1.1, colY + colVert - (3 * (.i - (maxItemsOnPage - (.c * 25)))) - 0.6
+			if extracts'.i'marked = 1
+				demo Draw line: .x + 0.3, .y + 1.1, .x + 1.2, .y - 0.65 + colVert
+				demo Draw line: .x + 0.3, .y - 0.65 + colVert, .x + 1.2, .y + 1.1
+			endif
+
+			extrName$ = extracts'.i'$
+			extrName$ = replace$ (extrName$, "_", "\_ ", 0)
+			demo Text special: colTextX - (.c * colHor), "left", colTextY - (3 * (.i - (maxItemsOnPage - (.c * 25) + 1))), "half", "Helvetica", 10, "0", "\O.  '.i'. 'extrName$'.wav"
+		endfor
+	endfor
+
+	# Write and draw the selected item.
+	for .c to 4
+		if .markedExtr > (maxItemsOnPage - (.c * 25)) and .markedExtr < ((maxItemsOnPage + 26) - (.c * 25))
+			.x = colX - (.c * colHor)
+			.y = colY - (3 * (.markedExtr - (maxItemsOnPage - (.c * 25))))
+			demo White
+
+			# Paint the background of the selected item.
+			demo Paint rectangle: backgroundColour$, .x, .x + colHor, .y, .y + colVert
+
+			# Paint the check box.
+			demo Paint rectangle: "{1, 1, 1}", .x + 0.25, .x + 1.2, .y + 1.1, .y - 0.6 + colVert
+			extrName$ = extracts'.markedExtr'$
+			extrName$ = replace$ (extrName$, "_", "\_ ", 0)
+			demo Text special: colTextX - (.c * colHor), "left", colTextY - (3 * (.markedExtr - (maxItemsOnPage - (.c * 25) + 1))), "half", "Helvetica", 10, "0", "\O.  '.markedExtr'. 'extrName$'.wav"
+			if extracts'.markedExtr'marked = 1
+				demo Black
+				demo Draw line: .x + 0.3, .y + 1.1, .x + 1.2, .y - 0.65 + colVert
+				demo Draw line: .x + 0.3, .y - 0.65 + colVert, .x + 1.2, .y + 1.1
+			endif
+		endif
+	endfor
+	demo Black
+endproc
+
 procedure previewSettings
 	label PREVIEW_SETTINGS_AGAIN
 
 	beginPause: "Choose preview settings"
-		comment: "Select the initial and final margin (dashed lines) in
-		... milliseconds."
-		comment: "(Values between 0-1000, defaults are 150 and 250 ms, respectively.)"
+		comment: "Select the initial and final margins (red lines) in milliseconds."
+		comment: "Cannot be negative, default values are 150 and 150 ms, respectively."
+		comment: "Set to 0 to disable margins."
 		real: "Initial margin (ms)", initialMargin
 		real: "Final margin (ms)", finalMargin
 		boolean: "Save preview settings", 0
-	clicked = endPause: "Cancel", "Continue", 2, 1
+	clicked = endPause: "Cancel", "Apply", 2, 1
 	if clicked = 1
 		goto PREVIEW_SETTINGS_CANCEL
 	endif
 
 	# Force the Initial and Final margins into sensible values.
 	if initial_margin < 0
-		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Initial margin cannot be negative:",
-		... """'initial_margin'"""
+		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Initial margin cannot be negative:", """'initial_margin'"""
 		if warningOption$ = "AGAIN"
 			goto PREVIEW_SETTINGS_AGAIN
 		else
 			goto PREVIEW_SETTINGS_CANCEL
 		endif
-	elsif initial_margin > 1000
-		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Initial margin cannot be greater than 1000:",
-		... """'initial_margin'"""
+	elsif final_margin < 0
+		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Final margin cannot be negative:", """'final_margin'"""
 		if warningOption$ = "AGAIN"
 			goto PREVIEW_SETTINGS_AGAIN
 		else
@@ -2572,9 +2345,6 @@ procedure previewSettings
 	label PREVIEW_SETTINGS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure removeExtracts
 	# Remove old extracts, the extracts table and the .folderContents table
@@ -2592,9 +2362,6 @@ procedure removeExtracts
 	extrMarked = 0
 endproc
 
-if !section
-{
-endif
 
 procedure openExtracts
 	label OPEN_EXTRACTS_AGAIN
@@ -2609,8 +2376,7 @@ procedure openExtracts
 		folderLength = length (openPreviousExtractsFolder$) 
 		if folderLength > 80
 			comment: left$ (openPreviousExtractsFolder$, 80) + "..."
-			comment: "..." + right$ (openPreviousExtractsFolder$,
-			... folderLength - 80) + "?"
+			comment: "..." + right$ (openPreviousExtractsFolder$, folderLength - 80) + "?"
 		else
 			comment: openPreviousExtractsFolder$ + "?"
 		endif
@@ -2621,8 +2387,7 @@ procedure openExtracts
 	if clicked = 1
 		goto OPEN_EXTRACTS_CANCEL
 	elsif clicked = 3
-		extractsFolder$ = chooseDirectory$: "Choose a directory to open short
-		... extracts from"
+		extractsFolder$ = chooseDirectory$: "Choose a directory to open short extracts from"
 		if extractsFolder$ = ""
 			goto OPEN_EXTRACTS_CANCEL
 		endif
@@ -2668,8 +2433,7 @@ procedure openExtracts
 		Save as text file: ".pcbrc"
 	endif
 
-	.folderContents = Create Strings as file list: "extractsFolderContents",
-	... "'extractsFolder$'"
+	.folderContents = Create Strings as file list: "extractsFolderContents", "'extractsFolder$'"
 	.nFiles = Get number of strings
 
 	.openable = 0
@@ -2688,13 +2452,11 @@ procedure openExtracts
 		selectObject: .folderContents
 		Remove
 		.folderContents = 0
-		@warning: 2, "SELECT", "CANCEL", "s", "c", "Select a folder which",
-		... "contains .wav or .mp3."
+		@warning: 2, "SELECT", "CANCEL", "s", "c", "Select a folder which", "contains .wav or .mp3."
 		goto OPEN_EXTRACTS_'warningOption$'
 
 	elif nExtracts <> 0 and extracts <> 0 and extractsToSave = 1
-		@warning: 2, "REMOVE", "CANCEL", "r", "c", "Remove existing", "extracted
-		... files?"
+		@warning: 2, "REMOVE", "CANCEL", "r", "c", "Remove existing", "extracted files?"
 		if warningOption$ = "REMOVE"
 			@removeExtracts
 		else
@@ -2723,11 +2485,6 @@ procedure openExtracts
 		extractsToSave = 1
 		
 		@extrScreenValues
-;		extrPages = floor (nExtracts / 100)
-;		maxItemsOnPage = extrPages + 1 * (100)
-;		extrPage = 1
-;		extrColumns = floor (nExtracts / 25)
-;		extrClicked = 1
 		repaint = 1
 	else
 		extracts$ = "%%Nothing selected.%"
@@ -2735,22 +2492,14 @@ procedure openExtracts
 	label OPEN_EXTRACTS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure extrScreenValues
 	extrPages = floor (nExtracts / 100.1) + 1
-;	maxItemsOnPage = extrPages * (100)
 	extrPage = 1
-;	extrColumns = (floor (nExtracts / 25) + 1) - ((extrPages - 1) * 4)
 	extrColumns = (floor (nExtracts / 25.1) + 1) - ((extrPages - 1) * 4)
 	extrClicked = 1
 endproc
 
-if !section
-{
-endif
 
 procedure viewExtracts
 	label LISTEN_EXTRACTS_AGAIN
@@ -2781,9 +2530,6 @@ procedure viewExtracts
 	label LISTEN_EXTRACTS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure fadeExtracts
 	label FADE_EXTRACTS_AGAIN
@@ -2791,16 +2537,12 @@ procedure fadeExtracts
 	if extracts <> 0
 		beginPause: "Apply fade in/out extracts"
 			comment: "Which extracts do you want to apply fade in/out to?"
-			comment: "Write the numbers of the samples, or a range like this:
-			... ""1 3-5 8""."
+			comment: "Write the numbers of the samples, or a range like this: ""1 3-5 8""."
 			if extrMarked > 0
 				@markedToString
 				text: "Select extracted", select$
 			elif nExtracts = 1
 				text: "Select extracted", "1"
-;			elif extrCtrl = 1
-;				text: "Select extracted", string$ (extrClicked)
-;				extrCtrl = 0
 			else
 				text: "Select extracted", "1-'nExtracts'"
 			endif
@@ -2873,9 +2615,6 @@ procedure fadeExtracts
 	label FADE_EXTRACTS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure addSilenceExtracts
 	label ADD_SILENCE_EXTRACTS_AGAIN
@@ -2883,16 +2622,12 @@ procedure addSilenceExtracts
 	if extracts <> 0
 		beginPause: "Add silence to extracts"
 			comment: "Which extracts do you want to add silence to?"
-			comment: "Write the numbers of the samples, or a range like this:
-			... ""1 3-5 8""."
+			comment: "Write the numbers of the samples, or a range like this: ""1 3-5 8""."
 			if extrMarked > 0
 				@markedToString
 				text: "Select extracted", select$
 			elif nExtracts = 1
 				text: "Select extracted", "1"
-;			elif extrCtrl = 1
-;				text: "Select extracted", string$ (extrClicked)
-;				extrCtrl = 0
 			else
 				text: "Select extracted", "1-'nExtracts'"
 			endif
@@ -2987,9 +2722,6 @@ procedure addSilenceExtracts
 	label ADD_SILENCE_EXTRACTS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure trimExtracts
 	label TRIM_EXTRACTS_AGAIN
@@ -2997,16 +2729,12 @@ procedure trimExtracts
 	if extracts <> 0
 		beginPause: "Trim extracts"
 			comment: "Which extracts do you want to trim?"
-			comment: "Write the numbers of the samples, or a range like this:
-			... ""1 3-5 8""."
+			comment: "Write the numbers of the samples, or a range like this: ""1 3-5 8""."
 			if extrMarked > 0
 				@markedToString
 				text: "Select extracted", select$
 			elif nExtracts = 1
 				text: "Select extracted", "1"
-;			elif extrCtrl = 1
-;				text: "Select extracted", string$ (extrClicked)
-;				extrCtrl = 0
 			else
 				text: "Select extracted", "1-'nExtracts'"
 			endif
@@ -3084,9 +2812,6 @@ procedure trimExtracts
 	label TRIM_EXTRACTS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure convertExtracts
 	label CONVERT_EXTRACTS_AGAIN
@@ -3101,13 +2826,10 @@ procedure convertExtracts
 
 	else
 		beginPause: "Convert extracts"
-	;		comment: "Convert the extracted sound files to mono or stereo?"
-	;		boolean: "Extracted files to mono or stereo", 0
 			comment: "Convert the extracted sound files to mp3?"
 			boolean: "Extracted files to mp3", 1
 			comment: "Which extracts do you want to convert?"
-			comment: "Write the numbers of the samples, or a range like this:
-			... ""1 3-5 8""."
+			comment: "Write the numbers of the samples, or a range like this: ""1 3-5 8""."
 			if extrMarked > 0
 				@markedToString
 				text: "Select extracted", select$
@@ -3116,8 +2838,7 @@ procedure convertExtracts
 			else
 				text: "Select extracted", "1-'nExtracts'"
 			endif
-			comment: "Do you want to discard the originally extracted .wav
-			... files?"
+			comment: "Do you want to discard the originally extracted .wav files?"
 			comment: "(WARNING: If you save converted files in the same folder,"
 			comment: "as the originals, these would be deleted too!)"
 			boolean: "Discard extracted wav", 1
@@ -3148,8 +2869,7 @@ procedure convertExtracts
 		label CONVERT_EXTRACTS_CONTINUE
 
 		if .items > 0
-			extractsFolder$ = chooseDirectory$: "Choose a directory to save the
-			... converted extracted files in"
+			extractsFolder$ = chooseDirectory$: "Choose a directory to save the converted extracted files in"
 			if extractsFolder$ <> ""
 				for i to .items
 					va = .value'i'
@@ -3157,21 +2877,11 @@ procedure convertExtracts
 					.extWavTemp$ = extracts'va'$
 					.path$ = "'extractsFolder$'/'.extWavTemp$'.wav"
 					.out$ = "'extractsFolder$'/'.extWavTemp$'.mp3"
-;					if fileReadable (.path$) = 1
-;						@warning: 2, "OVERWRITE", "CANCEL", "o", "c", "Original wav files in the folder", "will be overwritten."
-;						goto CONVERT_EXTRACTS_'warningOption$'
-;					else
-;						label CONVERT_EXTRACTS_OVERWRITE
-						Save as WAV file: .path$
-;					endif
+					Save as WAV file: .path$
 					if unix = 1 or macintosh = 1
-						system lame -h -V 2 --resample 'sampling_rate$' --tt
-						... '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$'
-						... '.out$'
+						system lame -h -V 2 --resample 'sampling_rate$' --tt '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$' '.out$'
 					elif windows = 1
-						system .\lame\lame.exe -h -V 2 --resample 'sampling_rate$'
-						... --tt '.extWavTemp$' --ty 'year' -b 'bit_rate$'
-						... '.path$' '.out$'
+						system .\lame\lame.exe -h -V 2 --resample 'sampling_rate$' --tt '.extWavTemp$' --ty 'year' -b 'bit_rate$' '.path$' '.out$'
 					endif
 					if discard_extracted_wav = 1
 						deleteFile (.path$)
@@ -3185,9 +2895,6 @@ procedure convertExtracts
 	label CONVERT_EXTRACTS_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure saveExtracts
 	label SAVE_EXTRACTS_AGAIN
@@ -3195,8 +2902,7 @@ procedure saveExtracts
 	if nExtracts <> 0
 		beginPause: "Save"
 			comment: "Which extracts do you want to save?"
-			comment: "Write the numbers of the samples, or a range like this:
-			... ""1 3-5 8""."
+			comment: "Write the numbers of the samples, or a range like this: ""1 3-5 8""."
 			if extrMarked > 0
 				@markedToString
 				text: "Select extracted", select$
@@ -3225,8 +2931,7 @@ procedure saveExtracts
 				folderLength = length (savePreviousExtractsFolder$) 
 				if folderLength > 80
 					comment: left$ (savePreviousExtractsFolder$, 80) + "..."
-					comment: "..." + right$ (savePreviousExtractsFolder$,
-					... folderLength - 80) + "?"
+					comment: "..." + right$ (savePreviousExtractsFolder$, folderLength - 80) + "?"
 				else
 					comment: savePreviousExtractsFolder$ + "?"
 				endif
@@ -3236,8 +2941,7 @@ procedure saveExtracts
 			if clicked = 1
 				goto SAVE_EXTRACTS_CANCEL
 			elsif clicked = 3
-				.directory$ = chooseDirectory$: "Choose a directory to save the
-				... files in"
+				.directory$ = chooseDirectory$: "Choose a directory to save the files in"
 				if extractsFolder$ = ""
 					goto SAVE_EXTRACTS_CANCEL
 				endif
@@ -3259,8 +2963,7 @@ procedure saveExtracts
 				Save as text file: ".pcbrc"
 			endif
 
-			# .directory$ = chooseDirectory$: "Choose a directory to save the
-			# ... files in"
+			# .directory$ = chooseDirectory$: "Choose a directory to save the files in"
 			if .directory$ <> ""
 				for i to .items
 					va = .value'i'
@@ -3277,14 +2980,50 @@ procedure saveExtracts
 	label SAVE_EXTRACTS_CANCEL
 endproc
 
+procedure DrawHelp
+	.from_x = 30
+	.to_x = 70
+	.from_y = 15
+	.to_y = 80
+	demo Paint rounded rectangle: warningWindowColour$, .from_x, .to_x, .from_y, .to_y, 1
+	demo Draw rounded rectangle: .from_x, .to_x, .from_y, .to_y, 1
+	if screen$ = "Extracts"
+		demo Text special: 33, "left", 70, "half", "Helvetica", 15, "0", "Keyboard shortcuts - 'screen$' Screen"
+		demo Text special: 33, "left", 64, "half", "Helvetica", 15, "0", "; - play"
+		demo Text special: 33, "left", 61, "half", "Helvetica", 15, "0", ": - interrupt playing"
+		demo Text special: 33, "left", 58, "half", "Helvetica", 15, "0", "h,j,k,l - move around"
+		demo Text special: 33, "left", 55, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+h,j,k,l - move around by 5)"
+		demo Text special: 33, "left", 52, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+Alt+h,j,k,l - move to next by 5 and play"
+		demo Text special: 33, "left", 49, "half", "Helvetica", 15, "0", "Shift+h,j,k,l - move to next, View & Edit and play"
+		demo Text special: 33, "left", 46, "half", "Helvetica", 15, "0", "d - select one item"
+		demo Text special: 33, "left", 43, "half", "Helvetica", 15, "0", "i - invert selection"
+		demo Text special: 33, "left", 40, "half", "Helvetica", 15, "0", "u - unselect all"
+		demo Text special: 33, "left", 37, "half", "Helvetica", 15, "0", "y - select all"
+		demo Text special: 33, "left", 34, "half", "Helvetica", 15, "0", "v - View & Edit"
+		demo Text special: 33, "left", 31, "half", "Helvetica", 15, "0", "V - Play + View & Edit"
+		demo Text special: 33, "left", 28, "half", "Helvetica", 15, "0", "r - refresh the screen"
+		demo Text special: 33, "left", 25, "half", "Helvetica", 15, "0", "? - show the help"
+		demo Text special: 33, "left", 22, "half", "Helvetica", 15, "0", "x - close the help (or click the \xx above)"
+	else
+		demo Text special: 33, "left", 46, "half", "Helvetica", 15, "0", "Sorry, no help here."
+		demo Text special: 33, "left", 43, "half", "Helvetica", 15, "0", "Press ""x"" to close this message (or click the \xx above)"
+	endif
+
+	# The "x" for closing the Help
+	demo Text special: .to_x - 2, "centre", .to_y - 3, "half", "Helvetica", 20, "0", "\xx"
+
+	x_clicked = 0
+	while x_clicked = 0 and demoWaitForInput ()
+		if demoKey$ () = "x" or demoClickedIn (.to_x - 3, .to_x - 1, .to_y - 4, .to_y - 2)
+			x_clicked = 1
+		endif
+	endwhile
+	@'screen$'Screen
+endproc
 
 #########################
 #### ANNOTATION PROCEDURES
 #########################
-
-if !section
-{
-endif
 
 procedure openAnnotation
 	label OPEN_ANNOTATION_AGAIN
@@ -3344,7 +3083,6 @@ procedure openAnnotation
 		endif
 
 		if openWithAnnotation = 1
-;		if sound = 0 or openWithAnnotation = 1
 			.noExt$ = textGridPath$ - ".TextGrid"
 
 			if fileReadable (.noExt$ + ".wav")
@@ -3363,9 +3101,6 @@ procedure openAnnotation
 	label OPEN_ANNOTATION_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure pausesAnnotation
 	if sound = 0
@@ -3376,10 +3111,8 @@ procedure pausesAnnotation
 	else
 		beginPause: "Marking pauses"
 			boolean: "Mark pauses automatically", 1
-			comment: "If you choose automatic pause marking a new TextGrid will
-			... be created!"
-			comment: "Choose tier names of the new TextGrid (separated by
-			... spaces):"
+			comment: "If you choose automatic pause marking a new TextGrid will be created!"
+			comment: "Choose tier names of the new TextGrid (separated by spaces):"
 			text: "Tier names", tierNames$
 			comment: "Silence threshhold of e.g. -35 will detect more regions as voiced than -25"
 			real: "Silence threshold (db)", -25
@@ -3387,11 +3120,9 @@ procedure pausesAnnotation
 			real: "Minimum silence", 0.7
 			comment: "Set the minimum sounding interval duration (s):"
 			real: "Minimum sounding", 0.05
-			comment: "Set the minimum margin of silence before the sounding
-			... interval (s):"
+			comment: "Set the minimum margin of silence before the sounding interval (s):"
 			real: "Silent margin before", silentMarginBefore
-			comment: "Set the minimum margin of silence after the sounding
-			... interval (s):"
+			comment: "Set the minimum margin of silence after the sounding interval (s):"
 			real: "Silent margin after", silentMarginAfter
 			word: "Silent interval label", silentIL$
 			word: "Sounding interval label", ""
@@ -3431,8 +3162,7 @@ procedure pausesAnnotation
 			.nTiers = .nTiers + 1
 			newTierName'.nTiers'$ = left$ (tier_names_left$, .space - 1)
 			tier_names_left_length = length (tier_names_left$)
-			tier_names_left$ = right$ (tier_names_left$, tier_names_left_length
-			... - .space)
+			tier_names_left$ = right$ (tier_names_left$, tier_names_left_length - .space)
 			.space = index (tier_names_left$, " ")
 			if .space = 0
 				.nTiers = .nTiers + 1
@@ -3467,9 +3197,7 @@ procedure pausesAnnotation
 				intensity = To Intensity: 100, 0, "yes"
 				silentIL$ = silent_interval_label$
 				soundingIL$ = sounding_interval_label$
-				textGrid = To TextGrid (silences): silence_threshold,
-				... minimum_silence, minimum_sounding, "'silentIL$'",
-				... "'soundingIL$'"
+				textGrid = To TextGrid (silences): silence_threshold, minimum_silence, minimum_sounding, "'silentIL$'", "'soundingIL$'"
 				textGrid$ = "'soundNoExt$'.TextGrid"
 				textGridName$ = soundNoExt$
 				textGridScreen$ = replace$ (textGrid$, "_", "\_ ", 0)
@@ -3549,9 +3277,6 @@ procedure pausesAnnotation
 	endif
 endproc
 
-if !section
-{
-endif
 
 procedure intervalsAnnotation
 # TODO: swap left and right context for search in final position
@@ -3568,8 +3293,7 @@ if textGrid = 0
 else
 
 	beginPause: "Add intervals to tier"
-		comment: "Which tier should be searched for items that come in the new
-		... intervals?"
+		comment: "Which tier should be searched for items that come in the new intervals?"
 		natural: "Source tier", 1
 		comment: "In which tier should the new intervals be created?"
 		natural: "Target tier", 4
@@ -3732,49 +3456,6 @@ else
 				.endWord = rindex_regex (.rContext$, " ")
 				.rContext$ = right$ (.rContext$, .rContextLength - .endWord)
 			endif
-# for number of char in context try to match the last char with a regex containing
-# all final characters, if it matches, remove from the context, append it to the
-# boundary
-
-;			.lContext$ = ""
-;			.rContext$ = ""
-;			.lBound$ = ""
-;			.rightBound$ = ""
-
-;			if include_left_context = 1
-;				.lcontext$ = replace_regex$ (.labelRest$, "(.*)" + .searchFor$ + "(.*)", "\1", 1)
-;				if endsWith (.lContext$, " ") = 1 and (position = 2 or position = 4)
-;					.lContext$ = .lContext$ - " "
-;					.lBound$ = " " + .lBound$
-;				endif
-;				.lContextLength = length (.lContext$)
-;				if position = 2
-;					.startOfWord = rindex_regex (.lContext$, "( |„|-)")
-;				elif position = 4
-;					.startOfWord = rindex_regex (.lContext$, "(\s|^|“|,| ,|\.|\?|!|:|;|-)")
-;				endif
-;				.lContext$ = right$ (.lContext$, .lContextLength - .startOfWord)
-;				if position = 2
-;				.int'i'lab'.newInt'$ = .lContext$ + .lBound$ + .match$
-;				elif position = 4
-;				.int'i'lab'.newInt'$ = .lContext$ + .match$
-;				endif
-;			endif
-
-;			if include_right_context = 1
-;				.rContext$ = replace_regex$ (.labelRest$, "(.*)" + .searchFor$ + "(.*)", "\4", 1)	
-;				if position = 2
-;					.endOfWord = index_regex (.rContext$, "(\s|$|“|,|\.|\?|!|:|;)")
-;				elif position = 4
-;					.endOfWord = index_regex (.rContext$, "( |„|$)")
-;				endif
-;				.rContext$ = left$ (.rContext$, .endOfWord - 1)
-;				if position = 2
-;				.int'i'lab'.newInt'$ = .int'i'lab'.newInt'$ + .rContext$
-;				elif position = 4
-;				.int'i'lab'.newInt'$ = .int'i'lab'.newInt'$ + .lBound$ + .rContext$
-;				endif
-;			endif
 
 			if include_left_context = 1 and include_right_context = 1 and position <> 4
 				.int'i'lab'.newInt'$ = .lContext$ + .lBound$ + .int'i'lab'.newInt'$ + .rBound$ + .rContext$
@@ -3855,7 +3536,6 @@ else
 			@reverse: .label$, "intervalsAnnotation.label$"
 		endif
 
-;		.label$ = Get label of interval: source_tier, i
 		.start = Get start point: source_tier, i
 		.end = Get end point: source_tier, i
 		.dur = .end - .start
@@ -3873,9 +3553,7 @@ else
 
 		if .newInt = 0 and prevEmpty = 0
 			.nTargIntervals = Get number of intervals: target_tier 
-;			if write_labels = 1
-				Set interval text: target_tier, .nTargIntervals, empty$
-;			endif
+			Set interval text: target_tier, .nTargIntervals, empty$
 			prevEmpty = 1
 		elif .newInt > 0
 			.newStep = .dur / .newInt
@@ -3927,9 +3605,6 @@ endif
 # REPAIR: label$ replacement!
 endproc
 
-if !section
-{
-endif
 
 procedure labelAnnotation
 	label LABEL_ANNOTATION_AGAIN
@@ -3951,28 +3626,21 @@ procedure labelAnnotation
 			option: "Label sound automatically"
 			option: "Label new TextGrid manually"
 			option: "Copy labels from another TextGrid"
-;		comment: "For auto-labelling provide ""texts"" with labels
-;		... and a TextGrid with intervals."
-		comment: "Choose tier names to (create &) label (separated by
-		... spaces):"
+		comment: "Choose tier names to (create &) label (separated by spaces):"
 		text: "Tier names", tierNames$
-		comment: "Do you want to include empty rows from the ""texts""
-		... file?"
+		comment: "Do you want to include empty rows from the ""texts"" file?"
 		boolean: "Include empty", 0
-		comment: "Only use lines in the ""texts"" which have a label in a
-		... specific column?"
+		comment: "Only use lines in the ""texts"" which have a label in a specific column?"
 		boolean: "Use leading column", 1
 		word: "Leading column", "code"
-		comment: "Do you want to overwrite old labels
-		... (including/excluding ''silentIL$'')?"
+		comment: "Do you want to overwrite old labels (including/excluding ''silentIL$'')?"
 		optionMenu: "Overwrite old labels", 1
 			option: "Overwrite but skip ''silentIL$''"
 			option: "Overwrite all intervals"
 			option: "Do not overwrite"
 		comment: "What is the label that should not be overwritten?"
 		word: "Do not overwrite", silentIL$
-		comment: "Overwrite repeated items with preceding label +
-		... label for repetition?"
+		comment: "Overwrite repeated items with preceding label + label for repetition?"
 		boolean: "Label repeated", 1
 		comment: "What is the label for repeated items?"
 		word: "Repeated item", "r"
@@ -4049,13 +3717,9 @@ procedure labelAnnotation
 			beginPause: "Create new textGrid"
 				real: "Start time (s)", 0.0
 				real: "End time (s)", 1.0
-;				comment: "Choose tier names to create & label (separated by
-;				... spaces):"
-;				text: "Tier names", tierNames$
 				comment: "Choose the name of the TextGrid:"
 				word: "TextGrid name", "default"
-				comment: "For auto-labelling open/create a TextGrid with
-				... intervals and a"
+				comment: "For auto-labelling open/create a TextGrid with intervals and a"
 				comment: "corresponding ""text(s)"" file with labels."
 			clicked = endPause: "Cancel", "Continue", 2, 1
 			if clicked = 1
@@ -4207,8 +3871,7 @@ procedure labelAnnotation
 		# Compare the number of empty intervals (or those that should be
 		# overwritten) in the tiers with the number of labels in the text file
 		# and report if they mismatch:
-		if (use_leading_column = 1 and .column$ = leading_column$)
-		... or use_leading_column = 0
+		if (use_leading_column = 1 and .column$ = leading_column$) or use_leading_column = 0
 
 			selectObject: textGrid
 			if overwrite_old_labels = 1
@@ -4257,8 +3920,7 @@ procedure labelAnnotation
 
 			# Skip intervals with 'xxx'; or any non-empty intervals if overwrite
 			# is disabled:
-			if (index (oldLabel$, do_not_overwrite$) <> 0 and overwrite_old_labels = 1)
-			... or (oldLabel$ <> "" and overwrite_old_labels = 3)
+			if (index (oldLabel$, do_not_overwrite$) <> 0 and overwrite_old_labels = 1) or (oldLabel$ <> "" and overwrite_old_labels = 3)
 				goto DONT_OVERWRITE
 
 			# Items that are repeated several times in a row and are
@@ -4275,8 +3937,7 @@ procedure labelAnnotation
 					goto DONT_OVERWRITE
 				endif
 				repeated = repeated + 1
-				Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$
-				... + "_'repeated_item$''repeated'"
+				Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$ + "_'repeated_item$''repeated'"
 				
 				prevOldLabel$ = oldLabel$
 
@@ -4295,8 +3956,7 @@ procedure labelAnnotation
 					leftEmpty = leftEmpty + 1
 					goto DONT_OVERWRITE
 				endif
-				Set interval text: .tierToLabel, int,
-				... label_'.column$'_'emptyInterval'$
+				Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$
 				prevOldLabel$ = oldLabel$
 			endif
 			label DONT_OVERWRITE
@@ -4350,8 +4010,7 @@ procedure labelAnnotation
 				goto DONT_OVERWRITE_LC
 			endif
 			repeated = repeated + 1
-			Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$
-			... + "_'repeated_item$''repeated'"
+			Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$ + "_'repeated_item$''repeated'"
 			prevOldLabel$ = oldLabel$
 
 			# The text from the remaining tiers gets erased:
@@ -4359,8 +4018,7 @@ procedure labelAnnotation
 				if .string'.s'$ <> leading_column$
 					.column$ = .string'.s'$
 					.remainingTier = .tierToLabel'.s'
-					Set interval text: .remainingTier, int,
-					... label_'.column$'_'emptyInterval'$
+					Set interval text: .remainingTier, int, label_'.column$'_'emptyInterval'$
 				endif
 			endfor
 
@@ -4380,8 +4038,7 @@ procedure labelAnnotation
 				leftEmpty = leftEmpty + 1
 				goto DONT_OVERWRITE_LC
 			endif
-			Set interval text: .tierToLabel, int,
-			... label_'leading_column$'_'emptyInterval'$
+			Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$
 			prevOldLabel$ = oldLabel$
 
 			# The remaining tiers are labelled:
@@ -4389,8 +4046,7 @@ procedure labelAnnotation
 				if .string'.s'$ <> leading_column$
 					.column$ = .string'.s'$
 					.remainingTier = .tierToLabel'.s'
-					Set interval text: .remainingTier, int,
-					... label_'.column$'_'emptyInterval'$
+					Set interval text: .remainingTier, int, label_'.column$'_'emptyInterval'$
 				endif
 			endfor
 
@@ -4435,9 +4091,6 @@ endif
 	label LABEL_ANNOTATION_CANCEL
 endproc
 
-if !section
-{
-endif
 
 procedure relabel
 	label RELABEL_AGAIN
@@ -4468,7 +4121,6 @@ procedure relabel
 			if warningOption$ = "CANCEL"
 				goto RELABEL_CANCEL
 			endif
-;			else
 
 			selectObject: .oldTextGrid
 			.oldTiers = Get number of tiers
@@ -4508,7 +4160,6 @@ procedure relabel
 			endfor
 
 			label RELABEL_FINISH
-;			endif
 		endif
 	endif
 	selectObject: .oldTextGrid
@@ -4517,14 +4168,10 @@ procedure relabel
 endproc
 }
 
-if !section
-{
-endif
 
 procedure saveAnnotation
 	if textGridToSave = 1
-		fileSave$ = chooseWriteFile$: "Save as text file",
-		... "'textGridPath$'"
+		fileSave$ = chooseWriteFile$: "Save as text file", "'textGridPath$'"
 		if fileSave$ <> ""
 			selectObject: textGrid
 			Save as text file: fileSave$
@@ -4540,167 +4187,8 @@ endproc
 ### Procedures for the right side of the annotation screen
 ############################################################
 
-if !section
-{
-endif
-
-;procedure intervalsToSelection
-;	if !textGrid or !sound
-;		@warning: 1, "OK", "", "", "", "No textgrid and/or sound.", ""
-;	else
-;		selectObject: textGrid
-;		plusObject: sound
-;		View & Edit
-;
-;		grid$ = selected$ ("TextGrid")
-;		
-;		editor: "TextGrid " + grid$
-;		start = Get start of selection
-;		end = Get end of selection
-;		
-;		editorInfo$ = Editor info
-;		activeTextGrid = extractNumber (editorInfo$, "Editor name:")
-;		
-;		endeditor
-;		
-;		nso = numberOfSelected ()
-;		
-;		for n to nso
-;			toSelect'n' = selected (n)
-;		endfor
-;		
-;		selectObject: activeTextGrid
-;		
-;		nIntervals = Get number of intervals: 1
-;		
-;		startInterval = Get interval at time: 1, start
-;		endInterval = Get interval at time: 1, end
-;		
-;		totalEnd = Get end time
-;
-;		if (startInterval < endInterval -1) or start = end
-;			goto QUIT_SHRINKING
-;		endif
-;		
-;		tiers = Get number of tiers
-;		timeBoundary = 0
-;		interval = 0
-;
-;		for i to tiers
-;		;	boundaryExists = Get interval boundary from time: i, end
-;		;	if boundaryExists > 0 or endInterval = nIntervals
-;		;		goto SKIP_ADDING_RIGHT
-;		;	endif
-;			rBoundaryExists = Get interval boundary from time: i, end
-;			if rBoundaryExists > 0 or (endInterval = nIntervals and startInterval = endInterval)
-;			... or end = totalEnd
-;				goto SKIP_ADDING_RIGHT
-;			endif
-;		endfor
-;		
-;		;for i to tiers
-;		;	Insert boundary: i, end
-;		;	Remove right boundary: i, endInterval + 1
-;		;endfor
-;
-;		for i to tiers
-;			lBoundaryExists = Get interval boundary from time: i, start
-;			if lBoundaryExists > 0
-;				if startInterval < endInterval - 1
-;					goto SKIP_ADDING_RIGHT
-;				elif startInterval < endInterval
-;					Insert boundary: i, end
-;					label$ = Get label of interval: i, endInterval
-;					Set interval text: i, endInterval, ""
-;					Set interval text: i, endInterval + 1, label$
-;					Remove left boundary: i, endInterval
-;				elif startInterval = endInterval
-;					Insert boundary: i, end
-;					Remove right boundary: i, endInterval + 1
-;				endif
-;
-;			else
-;				if startInterval < endInterval - 2 or startInterval = endInterval - 1
-;					goto SKIP_ADDING_RIGHT
-;				elif startInterval = endInterval - 2
-;					Insert boundary: i, end
-;					label$ = Get label of interval: i, endInterval
-;					Set interval text: i, endInterval, ""
-;					Set interval text: i, endInterval + 1, label$
-;					Remove left boundary: i, endInterval
-;				else
-;					Insert boundary: i, end
-;					Remove right boundary: i, endInterval + 1
-;				endif
-;			endif
-;		endfor
-;		
-;		endInterval = Get interval at time: 1, end
-;		
-;		label SKIP_ADDING_RIGHT
-;
-;		;for i to tiers
-;		;	boundaryExists = Get interval boundary from time: i, start
-;		;	if boundaryExists > 0 or startInterval = 1
-;		;		goto SKIP_ADDING_LEFT
-;		;	endif
-;		;endfor
-;
-;		for i to tiers
-;			lBoundaryExists = Get interval boundary from time: i, start
-;			if lBoundaryExists > 0 or startInterval = 1
-;				goto SKIP_ADDING_LEFT
-;			endif
-;		endfor
-;
-;		;for i to tiers
-;		;	Insert boundary: i, start
-;		;	label$ = Get label of interval: i, startInterval
-;		;	Set interval text: i, startInterval, ""
-;		;	Set interval text: i, startInterval + 1, label$
-;		;	Remove left boundary: i, startInterval
-;		;endfor
-;
-;		for i to tiers
-;			rBoundaryExists = Get interval boundary from time: i, end
-;			if rBoundaryExists > 0
-;				if startInterval < endInterval - 2
-;					goto SKIP_ADDING_LEFT
-;				elif startInterval = endInterval - 2
-;					Insert boundary: i, start
-;					Remove right boundary: i, startInterval + 1
-;				elif startInterval = endInterval - 1
-;					Insert boundary: i, start
-;					label$ = Get label of interval: i, startInterval
-;					Set interval text: i, startInterval, ""
-;					Set interval text: i, startInterval + 1, label$
-;					Remove left boundary: i, startInterval
-;				endif
-;			endif
-;		endfor
-;		
-;		label SKIP_ADDING_LEFT
-;		
-;		;editor: "TextGrid " + grid$
-;		;Zoom to selection
-;		;Zoom out
-;		;endeditor
-;		
-;		label QUIT_SHRINKING
-;		
-;		selectObject: toSelect1
-;		for n from 2 to nso
-;			plusObject: toSelect'n'
-;		endfor
-;		
-;	endif
-;endproc
-
 label FINISHED
 
-if !section
-{
-endif
 #########
 # TODO
 #########
@@ -4778,4 +4266,3 @@ endif
 
 # choose tier to annotate: code, orth,... - make it universal - June 2015
 # add intervals to a tier according to search results in another tier
-
