@@ -21,11 +21,11 @@
 #
 #     README
 #     For the .wav to .mp3 conversion to work you have to have the lame codec
-#     installed on your computer. On linux it can be installed anywhere. On
-#     Windows, by default, you should have in the folder with this script a
-#     subdirectory "lame" with lame.exe in it. If you have "lame.exe" installed
-#     elsewhere on your computer, you should change the path to it in the script
-#     below.
+#     installed on your computer. On GNU/linux it has to be in your $PATH
+#     environment variable. On Windows, by default, you should have in the
+#     folder with this script a subdirectory "lame" with lame.exe in it. If you
+#     have "lame.exe" installed elsewhere on your computer, you should change
+#     the path to it in the script below.
 #
 #     The opening curly brackets "{" at the beginnings of some lines are there
 #     simply to make navigation easier when using the text editor vim:
@@ -426,8 +426,9 @@ warningOption$ = ""
 
 @MainScreen
 
-if show_message = 0 or unix <> 1
-elif show_message = 1 and unix = 1
+if show_message = 1 and unix = 1
+	# This was more like a test if the ".pcbrc" works but maybe the message
+	# could be used for something useful.
 	beginPause: "When starting PCB for the first time"
 		comment: "Do you want to show this message after restarting PCB?"
 		boolean: "Show message", 1
@@ -467,6 +468,7 @@ while !quit and !reset and demoWaitForInput()
 		endif
 	endfor
 
+	# Move to the selected screen
 	if buttonClicked > 0
 		if screen = mainScreen or screen = saveScreen
 			screen = buttonClicked
@@ -484,13 +486,19 @@ while !quit and !reset and demoWaitForInput()
 		endif
 	endif
 
-	# interaction with the extracts screen
+	if demoKey$ () = "?"
+		@ShowHelp'screen$'
+	endif
+
+	# interaction with the screens
 	if screen = textsScreen
+		# Re-load the file
 		if demoKey$ () = "O" and textsPath$ <> ""
 			reopen = 1
 			@openTexts
 		endif
 	elif screen = soundScreen
+		# Re-load the file
 		if demoKey$ () = "O" and soundPath$ <> ""
 			reopen = 1
 			@openSound
@@ -500,6 +508,7 @@ while !quit and !reset and demoWaitForInput()
 			openWithAnnotation = 1
 			@openAnnotation
 		endif
+		# Re-load the file
 		if demoKey$ () = "O" and textGridPath$ <> ""
 			reopen = 1
 			@openAnnotation
@@ -560,9 +569,6 @@ while !quit and !reset and demoWaitForInput()
 			endfor
 		endfor
 
-		if demoKey$ () = "?"
-			@DrawHelp
-		endif
 		# "r" is the "Refresh" key
 		if demoKey$ () = "r" and extrClicked != 0
 			@PaintSoundWave: extrClicked
@@ -755,7 +761,7 @@ while !quit and !reset and demoWaitForInput()
 				quit = 1
 			endif
 
-		elsif screen$ = "Extracts" and (demoClickedIn (44, 50, 91, 97) or demoKey$ () = "p")
+		elif screen$ = "Extracts" and (demoClickedIn (44, 50, 91, 97) or demoKey$ () = "p")
 			@previewSettings
 		endif
 
@@ -767,11 +773,11 @@ while !quit and !reset and demoWaitForInput()
 		if demoClickedIn (25, 39, 28.5, 31.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "p")
 			@speakerMain
-		elsif demoClickedIn (25, 32, 23.5, 26.5)
+		elif demoClickedIn (25, 32, 23.5, 26.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "t")
 			repaint = 1
 			screen = textsScreen
-		elsif demoClickedIn (25, 32, 18.5, 21.5)
+		elif demoClickedIn (25, 32, 18.5, 21.5)
 		... or (demoCommandKeyPressed () = 1 and demoKey$ () = "l")
 			repaint = 1
 			screen = soundScreen
@@ -1585,7 +1591,7 @@ procedure openTexts
 
 	if rindex (textsPath$, ".wav") > 0 or rindex (textsPath$, ".TextGrid") > 0
 		texts$ = prevTexts$
-		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Select a .txt, .cvs",
+		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Select a .txt, .csv",
 		... "or similar file."
 		goto OPEN_TEXTS_'warningOption$'
 
@@ -1595,10 +1601,7 @@ procedure openTexts
 				selectObject: texts
 				Remove
 			endif
-			if fileReadable (textsPath$)
-				# This is empty so that the script proceeds normally if the file
-				# exists and is readable.
-			else
+			if !fileReadable (textsPath$)
 				@warning: 2, "AGAIN", "CANCEL", "a", "c", "File not readable!",
 				... "Check the path!"
 				goto OPEN_TEXTS_'warningOption$'
@@ -2321,7 +2324,7 @@ procedure previewSettings
 		else
 			goto PREVIEW_SETTINGS_CANCEL
 		endif
-	elsif final_margin < 0
+	elif final_margin < 0
 		@warning: 2, "AGAIN", "CANCEL", "a", "c", "Final margin cannot be negative:", """'final_margin'"""
 		if warningOption$ = "AGAIN"
 			goto PREVIEW_SETTINGS_AGAIN
@@ -2386,7 +2389,7 @@ procedure openExtracts
 	clicked = endPause: "Cancel", "Use previous", "Choose new", 2, 1
 	if clicked = 1
 		goto OPEN_EXTRACTS_CANCEL
-	elsif clicked = 3
+	elif clicked = 3
 		extractsFolder$ = chooseDirectory$: "Choose a directory to open short extracts from"
 		if extractsFolder$ = ""
 			goto OPEN_EXTRACTS_CANCEL
@@ -2436,23 +2439,26 @@ procedure openExtracts
 	.folderContents = Create Strings as file list: "extractsFolderContents", "'extractsFolder$'"
 	.nFiles = Get number of strings
 
-	.openable = 0
+	.n_openable = 0
 
 	for n to .nFiles
 		selectObject: .folderContents
 		.file$ = Get string: n
-		if right$ (.file$, 4) = ".wav" or right$ (.file$, 4) = ".mp3"
-			.openable = .openable + 1
-			.openableFull'.openable'$ = .file$
-			.openable'.openable'$ = .file$ - right$ (.file$, 4)
+		# Get extension including the dot
+		.dot_index = rindex (.file$, ".")
+		.extension$ = right$ (.file$, length (.file$) - .dot_index + 1)
+		if .extension$ = ".wav" or .extension$ = ".mp3" or .extension$ = ".flac"
+			.n_openable = .n_openable + 1
+			.openableFull'.n_openable'$ = .file$
+			.n_openable'.n_openable'$ = .file$ - .extension$
 		endif
 	endfor
 
-	if .openable = 0
+	if .n_openable = 0
 		selectObject: .folderContents
 		Remove
 		.folderContents = 0
-		@warning: 2, "SELECT", "CANCEL", "s", "c", "Select a folder which", "contains .wav or .mp3."
+		@warning: 2, "SELECT", "CANCEL", "s", "c", "Select a folder which", "contains .wav, .mp3, or .flac"
 		goto OPEN_EXTRACTS_'warningOption$'
 
 	elif nExtracts <> 0 and extracts <> 0 and extractsToSave = 1
@@ -2468,12 +2474,12 @@ procedure openExtracts
 	Remove
 	.folderContents = 0
 
-	if .openable > 0
-		nExtracts = .openable
+	if .n_openable > 0
+		nExtracts = .n_openable
 		extracts = Create Table with column names: "extracts", 0, "Extracts"
 		for n to nExtracts
 			fileName$ = .openableFull'n'$
-			extracts'n'$ = .openable'n'$
+			extracts'n'$ = .n_openable'n'$
 			extracts'n' = Read from file: "'extractsFolder$'/'fileName$'"
 			Rename: extracts'n'$
 			selectObject: extracts
@@ -2940,7 +2946,7 @@ procedure saveExtracts
 			clicked = endPause: "Cancel", "Use previous", "Choose new", 2, 1
 			if clicked = 1
 				goto SAVE_EXTRACTS_CANCEL
-			elsif clicked = 3
+			elif clicked = 3
 				.directory$ = chooseDirectory$: "Choose a directory to save the files in"
 				if extractsFolder$ = ""
 					goto SAVE_EXTRACTS_CANCEL
@@ -2980,45 +2986,77 @@ procedure saveExtracts
 	label SAVE_EXTRACTS_CANCEL
 endproc
 
-procedure DrawHelp
-	.from_x = 30
-	.to_x = 70
-	.from_y = 15
-	.to_y = 80
-	demo Paint rounded rectangle: warningWindowColour$, .from_x, .to_x, .from_y, .to_y, 1
-	demo Draw rounded rectangle: .from_x, .to_x, .from_y, .to_y, 1
-	if screen$ = "Extracts"
-		demo Text special: 33, "left", 70, "half", "Helvetica", 15, "0", "Keyboard shortcuts - 'screen$' Screen"
-		demo Text special: 33, "left", 64, "half", "Helvetica", 15, "0", "; - play"
-		demo Text special: 33, "left", 61, "half", "Helvetica", 15, "0", ": - interrupt playing"
-		demo Text special: 33, "left", 58, "half", "Helvetica", 15, "0", "h,j,k,l - move around"
-		demo Text special: 33, "left", 55, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+h,j,k,l - move around by 5)"
-		demo Text special: 33, "left", 52, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+Alt+h,j,k,l - move to next by 5 and play"
-		demo Text special: 33, "left", 49, "half", "Helvetica", 15, "0", "Shift+h,j,k,l - move to next, View & Edit and play"
-		demo Text special: 33, "left", 46, "half", "Helvetica", 15, "0", "d - select one item"
-		demo Text special: 33, "left", 43, "half", "Helvetica", 15, "0", "i - invert selection"
-		demo Text special: 33, "left", 40, "half", "Helvetica", 15, "0", "u - unselect all"
-		demo Text special: 33, "left", 37, "half", "Helvetica", 15, "0", "y - select all"
-		demo Text special: 33, "left", 34, "half", "Helvetica", 15, "0", "v - View & Edit"
-		demo Text special: 33, "left", 31, "half", "Helvetica", 15, "0", "V - Play + View & Edit"
-		demo Text special: 33, "left", 28, "half", "Helvetica", 15, "0", "r - refresh the screen"
-		demo Text special: 33, "left", 25, "half", "Helvetica", 15, "0", "? - show the help"
-		demo Text special: 33, "left", 22, "half", "Helvetica", 15, "0", "x - close the help (or click the \xx above)"
-	else
-		demo Text special: 33, "left", 46, "half", "Helvetica", 15, "0", "Sorry, no help here."
-		demo Text special: 33, "left", 43, "half", "Helvetica", 15, "0", "Press ""x"" to close this message (or click the \xx above)"
-	endif
 
-	# The "x" for closing the Help
-	demo Text special: .to_x - 2, "centre", .to_y - 3, "half", "Helvetica", 20, "0", "\xx"
+procedure DrawHelpFrame
+	help_from_x = 30
+	help_to_x = 80
+	help_from_y = 15
+	help_to_y = 80
+	demo Paint rounded rectangle: warningWindowColour$, help_from_x, help_to_x, help_from_y, help_to_y, 1
+	demo Draw rounded rectangle: help_from_x, help_to_x, help_from_y, help_to_y, 1
+	# Heading
+	demo Text special: 33, "left", 75, "half", "Helvetica", 15, "0", "Keyboard shortcuts - 'screen$' Screen"
+	demo Text special: 33, "left", 22, "half", "Helvetica", 15, "0", "? - show help"
+	demo Text special: 33, "left", 19, "half", "Helvetica", 15, "0", "x - hide help (or click the \xx above)"
+	# The "x" for hiding the Help
+	demo Text special: help_to_x - 2, "centre", help_to_y - 3, "half", "Helvetica", 20, "0", "\xx"
+endproc
 
+
+procedure CloseHelp
 	x_clicked = 0
 	while x_clicked = 0 and demoWaitForInput ()
-		if demoKey$ () = "x" or demoClickedIn (.to_x - 3, .to_x - 1, .to_y - 4, .to_y - 2)
+		if demoKey$ () = "x" or demoClickedIn (help_to_x - 3, help_to_x - 1, help_to_y - 4, help_to_y - 2)
 			x_clicked = 1
 		endif
 	endwhile
 	@'screen$'Screen
+endproc
+
+
+procedure ShowHelpMain
+	@DrawHelpFrame
+	demo Text special: 33, "left", 67, "half", "Helvetica", 15, "0", "p - change speaker data)"
+	demo Text special: 33, "left", 64, "half", "Helvetica", 15, "0", "t - edit texts"
+	demo Text special: 33, "left", 61, "half", "Helvetica", 15, "0", "l - edit Long Sound"
+	demo Text special: 33, "left", 58, "half", "Helvetica", 15, "0", "e - edit extracts"
+	demo Text special: 33, "left", 55, "half", "Helvetica", 15, "0", "a - edit annoation"
+	demo Text special: 33, "left", 52, "half", "Helvetica", 15, "0", "s - save..."
+	demo Text special: 33, "left", 49, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+r - reset (all data will be lost)"
+	demo Text special: 33, "left", 46, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+q - quit"
+	@CloseHelp
+endproc
+
+
+procedure ShowHelpExtracts
+	@DrawHelpFrame
+	demo Text special: 33, "left", 67, "half", "Helvetica", 15, "0", "; - play (or click on the sample name)"
+	demo Text special: 33, "left", 64, "half", "Helvetica", 15, "0", ": - interrupt playing"
+	demo Text special: 33, "left", 61, "half", "Helvetica", 15, "0", "h,j,k,l - move around"
+	demo Text special: 33, "left", 58, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+h,j,k,l - move around by 5)"
+	demo Text special: 33, "left", 55, "half", "Helvetica", 15, "0", "(Only GNU/Linux: Ctrl+Alt+h,j,k,l - move to next by 5 and play"
+	demo Text special: 33, "left", 52, "half", "Helvetica", 15, "0", "Shift+h,j,k,l - move to next, View & Edit and play"
+	demo Text special: 33, "left", 49, "half", "Helvetica", 15, "0", "d - select one item"
+	demo Text special: 33, "left", 46, "half", "Helvetica", 15, "0", "i - invert selection"
+	demo Text special: 33, "left", 43, "half", "Helvetica", 15, "0", "u - unselect all"
+	demo Text special: 33, "left", 40, "half", "Helvetica", 15, "0", "y - select all"
+	demo Text special: 33, "left", 37, "half", "Helvetica", 15, "0", "v - View & Edit (or click on the \O symbol)"
+	demo Text special: 33, "left", 34, "half", "Helvetica", 15, "0", "V - Play + View & Edit"
+	demo Text special: 33, "left", 31, "half", "Helvetica", 15, "0", "r - refresh the screen"
+	@CloseHelp
+endproc
+
+procedure ShowHelpTexts
+	@DrawHelpFrame
+	@CloseHelp
+endproc
+procedure ShowHelpSound
+	@DrawHelpFrame
+	@CloseHelp
+endproc
+procedure ShowHelpAnnotation
+	@DrawHelpFrame
+	@CloseHelp
 endproc
 
 #########################
@@ -3373,7 +3411,7 @@ else
 
 		while .hit > 0
 			.newInt = .newInt + 1
- 
+
 			# For initial and final position replacement \3 is used because the
 			# .searchFor$ consists of two groupings:
 			if position = 1
@@ -3616,312 +3654,384 @@ procedure labelAnnotation
 			@openAnnotation
 		endif
 	else
+		demoShow ()
+		choose_labelling_method = 0
 
-	demoShow ()
-	choose_labelling_method = 0
+		beginPause: "Annotation"
+			optionMenu: "Choose labelling method", 1
+				option: "Label existing TextGrid manually"
+				option: "Label sound automatically"
+				option: "Label new TextGrid manually"
+				option: "Copy labels from another TextGrid"
+			comment: "Choose tier names to (create &) label (separated by spaces):"
+			text: "Tier names", tierNames$
+			comment: "Do you want to include empty rows from the ""texts"" file?"
+			boolean: "Include empty", 0
+			comment: "Only use lines in the ""texts"" which have a label in a specific column?"
+			boolean: "Use leading column", 1
+			word: "Leading column", "code"
+			comment: "Do you want to overwrite old labels (including/excluding ''silentIL$'')?"
+			optionMenu: "Overwrite old labels", 1
+				option: "Overwrite but skip ''silentIL$''"
+				option: "Overwrite all intervals"
+				option: "Do not overwrite"
+			comment: "What is the label that should not be overwritten?"
+			word: "Do not overwrite", silentIL$
+			comment: "Overwrite repeated items with preceding label + label for repetition?"
+			boolean: "Label repeated", 1
+			comment: "What is the label for repeated items?"
+			word: "Repeated item", "r"
+			boolean: "Save annotation settings", 0
+		clicked = endPause: "Cancel", "Continue", 2, 1
 
-	beginPause: "Annotation"
-		optionMenu: "Choose labelling method", 1
-			option: "Label existing TextGrid manually"
-			option: "Label sound automatically"
-			option: "Label new TextGrid manually"
-			option: "Copy labels from another TextGrid"
-		comment: "Choose tier names to (create &) label (separated by spaces):"
-		text: "Tier names", tierNames$
-		comment: "Do you want to include empty rows from the ""texts"" file?"
-		boolean: "Include empty", 0
-		comment: "Only use lines in the ""texts"" which have a label in a specific column?"
-		boolean: "Use leading column", 1
-		word: "Leading column", "code"
-		comment: "Do you want to overwrite old labels (including/excluding ''silentIL$'')?"
-		optionMenu: "Overwrite old labels", 1
-			option: "Overwrite but skip ''silentIL$''"
-			option: "Overwrite all intervals"
-			option: "Do not overwrite"
-		comment: "What is the label that should not be overwritten?"
-		word: "Do not overwrite", silentIL$
-		comment: "Overwrite repeated items with preceding label + label for repetition?"
-		boolean: "Label repeated", 1
-		comment: "What is the label for repeated items?"
-		word: "Repeated item", "r"
-		boolean: "Save annotation settings", 0
-	clicked = endPause: "Cancel", "Continue", 2, 1
+		if clicked = 1
+			goto LABEL_ANNOTATION_CANCEL
+		endif
 
-	if clicked = 1
-		goto LABEL_ANNOTATION_CANCEL
-	endif
+		if save_annotation_settings = 1
+			selectObject: settings
+			col = Search column: "variable", "tierNames$"
+			Set string value: col, "value", """'tier_names$'"""
+			selectObject: settings
+			Save as text file: ".pcbrc"
+		endif
 
-	if save_annotation_settings = 1
-		selectObject: settings
-		col = Search column: "variable", "tierNames$"
-		Set string value: col, "value", """'tier_names$'"""
-		selectObject: settings
-		Save as text file: ".pcbrc"
-	endif
-
-	if choose_labelling_method = 1 and textGrid <> 0
-		goto LABEL_EXISTING_MANUALLY
-	elif choose_labelling_method = 1
-		goto LABEL_FIRST_MANUALLY
-	elif choose_labelling_method = 2
-		goto LABEL_SOUND_AUTOMATICALLY
-	elif choose_labelling_method = 3
-		goto LABEL_NEW_MANUALLY
-	elif choose_labelling_method = 4
-		@relabel
-		goto LABEL_EXISTING_MANUALLY
-	endif
-
-	label LABEL_SOUND_AUTOMATICALLY
-	if texts = 0
-		@warning: 2, "OPEN", "CANCEL", "o", "c", "Open a text file first.",
-		... ""
-		if warningOption$ = "OPEN"
-			@openTexts
+		if choose_labelling_method = 1 and textGrid <> 0
+			goto LABEL_EXISTING_MANUALLY
+		elif choose_labelling_method = 1
+			goto LABEL_FIRST_MANUALLY
+		elif choose_labelling_method = 2
 			goto LABEL_SOUND_AUTOMATICALLY
+		elif choose_labelling_method = 3
+			goto LABEL_NEW_MANUALLY
+		elif choose_labelling_method = 4
+			@relabel
+			goto LABEL_EXISTING_MANUALLY
 		endif
-		goto LABEL_ANNOTATION_CANCEL
-	endif
 
-	if textGrid = 0
-		@warning: 2, "OPEN", "CANCEL", "o", "c", "Open or create",
-		... "a TextGrid first."
-		if warningOption$ = "OPEN"
-			@openAnnotation
-			goto LABEL_SOUND_AUTOMATICALLY
-		endif
-		goto LABEL_ANNOTATION_CANCEL
-	elif textGrid <> 0 
-		@warning: 2, "OVERWRITE", "CANCEL", "o", "c", "Overwrite existing",
-		... "labels?"
-		if warningOption$ = "OVERWRITE"
-			goto OVERWRITE_A
-		endif
-		goto LABEL_EXISTING_MANUALLY
-	endif
-
-	label LABEL_NEW_MANUALLY
-	if textGrid <> 0
-		selectObject: textGrid
-		Remove
-	endif
-
-	label LABEL_FIRST_MANUALLY
-
-	if sound = 0
-		@warning: 2, "OPEN", "CREATE", "o", "c", "Open a sound or create",
-		... "independent textGrid."
-		if warningOption$ = "OPEN"
-			@openSound
-		else
-			beginPause: "Create new textGrid"
-				real: "Start time (s)", 0.0
-				real: "End time (s)", 1.0
-				comment: "Choose the name of the TextGrid:"
-				word: "TextGrid name", "default"
-				comment: "For auto-labelling open/create a TextGrid with intervals and a"
-				comment: "corresponding ""text(s)"" file with labels."
-			clicked = endPause: "Cancel", "Continue", 2, 1
-			if clicked = 1
-				goto LABEL_ANNOTATION_CANCEL
+		label LABEL_SOUND_AUTOMATICALLY
+		if texts = 0
+			@warning: 2, "OPEN", "CANCEL", "o", "c", "Open a text file first.",
+			... ""
+			if warningOption$ = "OPEN"
+				@openTexts
+				goto LABEL_SOUND_AUTOMATICALLY
 			endif
-			textGrid = Create TextGrid: start_time, end_time, tier_names$, ""
-			textGrid$ = "'textgrid_name$'.TextGrid"
-			textGridName$ = textgrid_name$
-			goto TEXTGRID_WITHOUT_SOUND
+			goto LABEL_ANNOTATION_CANCEL
 		endif
-	endif
 
-	selectObject: sound
-	textGrid = To TextGrid: tier_names$, ""
-	textGrid$ = "'soundNoExt$'.TextGrid"
-	textGridName$ = soundNoExt$
-
-	label TEXTGRID_WITHOUT_SOUND
-
-	textGridScreen$ = replace$ (textGrid$, "_", "\_ ", 0)
-	textGridFolder$ = soundFolder$
-	textGridPath$ = textGridFolder$ + textGrid$
-	@AnnotationScreen
-	if choose_labelling_method = 1 or choose_labelling_method = 3
-		goto LABEL_EXISTING_MANUALLY
-	endif
-
-	### Automatic labelling
-	label OVERWRITE_A
-
-	selectObject: textGrid
-	.nTiers = Get number of tiers
-	for .j to .nTiers
-		existingTier'.j'$ = Get tier name: .j
-		numberOfIntervals'.j' = Get number of intervals: .j
-	endfor
-
-	# The @textToStrings proc produces '.strings' - the number of tiers that
-	# are supposed to be labelled, and .string'N'$ - the individual tier
-	# names.
-	.label$ = "CONTINUE"
-	@textToStrings: "labelAnnotation", tier_names$ 
-
-	# If the .label$ variable does not get its value in the @textToStrings
-	# procedure, it has the default value "CONTINUE"
-	goto LABEL_ANNOTATION_'.label$'
-	label LABEL_ANNOTATION_CONTINUE
-
-	# Check whether the tiers specified in the form exist in the TextGrid
-	# and associate the number (.tierToLabel'.s') of the tier with the name:
-	for .s to .strings
-		.tierExists'.s' = 0
-		.tier$ = .string'.s'$
-		for .j to .nTiers
-			if .tier$ = existingTier'.j'$
-				.tierExists'.s' = 1	
-				.tierToLabel'.s' = .j
+		if textGrid = 0
+			@warning: 2, "OPEN", "CANCEL", "o", "c", "Open or create",
+			... "a TextGrid first."
+			if warningOption$ = "OPEN"
+				@openAnnotation
+				goto LABEL_SOUND_AUTOMATICALLY
 			endif
-		endfor
-		if .tierExists'.s' = 0
-			@warning: 2, "AGAIN", "CANCEL", "a", "c", "Tier ""'.tier$'""
-			... does not", "exist in the TextGrid!"
-			goto LABEL_ANNOTATION_'warningOption$'
-		endif
-	endfor
-
-	# Check whether there are the columns with labels in the texts file:
-	selectObject: texts
-	.textRows = Get number of rows
-	.textColumns = Get number of columns
-	for .j to .textColumns
-		.columnLabel'.j'$ = Get column label: .j
-	endfor
-
-	for .s to .strings
-		.columnExists'.s' = 0
-		.column$ = .string'.s'$
-		for .j to .textColumns
-			if .column$ = .columnLabel'.j'$
-				.columnExists'.s' = 1	
+			goto LABEL_ANNOTATION_CANCEL
+		elif textGrid <> 0 
+			@warning: 2, "OVERWRITE", "CANCEL", "o", "c", "Overwrite existing",
+			... "labels?"
+			if warningOption$ = "OVERWRITE"
+				goto OVERWRITE_A
 			endif
-		endfor
-		if .columnExists'.s' = 0
-			@warning: 2, "AGAIN", "CANCEL", "a", "c", "Column ""'.column$'"" does not",
-			... "exist in the texts file!"
-			goto LABEL_ANNOTATION_'warningOption$'
-		endif
-	endfor
-
-	# If a leading column is chosen, check whether it exists, and find out what
-	# is the corresponding tier and which rows in the "texts" should be used:
-	if use_leading_column = 1
-		.leading_column = 0
-		for .j to .nTiers
-			if leading_column$ = existingTier'.j'$
-				.leading_column = .j
-			endif
-		endfor
-
-		if .leading_column = 0
-			@warning: 2, "AGAIN", "CANCEL", "a", "c", "Leading column
-			... ""'.column$'"" has no", "corresponding tier in TextGrid!"
-			goto LABEL_ANNOTATION_'warningOption$'
+			goto LABEL_EXISTING_MANUALLY
 		endif
 
-		selectObject: texts
-		# Count the total number (.nLabels) and remember the position
-		# (.rwl'.nLabels') of rows which have a label in the leading column:
-		.nLabels = 0
-		for .tr to .textRows
-			.label$ = Get value: .tr, leading_column$
-			if .label$ <> ""
-				.nLabels = .nLabels + 1
-				.rwl'.nLabels' = .tr
-			endif
-		.leadColLabels = .nLabels
-		endfor
-	endif
-
-	# Get all the labels for items in the text file, do it for each tier
-	# individually:
-	for .s to .strings
-		selectObject: texts
-		.tierToLabel = .tierToLabel'.s'
-		.column$ = .string'.s'$
-
-		# If the leading column is used, only get the labels from specific rows:
-		# .rwl'.tr' are the rows which have a label in the leading column:
-		if use_leading_column = 1
-			for .tr to .nLabels
-				label$ = Get value: .rwl'.tr', .column$
-				label_'.column$'_'.tr'$ = label$
-			endfor
-
-		# If no leading column is used, get the labels for each column
-		# individually:
-		else
-			.nLabels = 0
-			for .tr to .textRows
-				label$ = Get value: .tr, .column$
-				if label$ <> "" or include_empty = 1
-					.nLabels = .nLabels + 1
-					label_'.column$'_'.nLabels'$ = label$
-				endif
-			endfor
-		endif
-		.nLabels'.s' = .nLabels
-
-		# Compare the number of empty intervals (or those that should be
-		# overwritten) in the tiers with the number of labels in the text file
-		# and report if they mismatch:
-		if (use_leading_column = 1 and .column$ = leading_column$) or use_leading_column = 0
-
+		label LABEL_NEW_MANUALLY
+		if textGrid <> 0
 			selectObject: textGrid
-			if overwrite_old_labels = 1
-				noLabel = Count labels: .tierToLabel, silentIL$
-				empty = numberOfIntervals'.tierToLabel' - noLabel
-			elif overwrite_old_labels = 2
-				empty = numberOfIntervals'.tierToLabel'
-			elif overwrite_old_labels = 3
-				empty = Count labels: .tierToLabel, ""
-			endif
+			Remove
+		endif
 
-			if .nLabels > empty
-				excessCodes = .nLabels - empty
-				if excessCodes = 1
-					labelsPlSg$ = "label"
-				else
-					labelsPlSg$ = "labels"
-				endif
-				@warning: 2, "IGNORE", "CANCEL", "i", "c", "'excessCodes' more
-				... 'labelsPlSg$' than empty", "intervals in tier ""'.column$'""!"
-				if warningOption$ = "CANCEL"
+		label LABEL_FIRST_MANUALLY
+
+		if sound = 0
+			@warning: 2, "OPEN", "CREATE", "o", "c", "Open a sound or create",
+			... "independent textGrid."
+			if warningOption$ = "OPEN"
+				@openSound
+			else
+				beginPause: "Create new textGrid"
+					real: "Start time (s)", 0.0
+					real: "End time (s)", 1.0
+					comment: "Choose the name of the TextGrid:"
+					word: "TextGrid name", "default"
+					comment: "For auto-labelling open/create a TextGrid with intervals and a"
+					comment: "corresponding ""text(s)"" file with labels."
+				clicked = endPause: "Cancel", "Continue", 2, 1
+				if clicked = 1
 					goto LABEL_ANNOTATION_CANCEL
 				endif
+				textGrid = Create TextGrid: start_time, end_time, tier_names$, ""
+				textGrid$ = "'textgrid_name$'.TextGrid"
+				textGridName$ = textgrid_name$
+				goto TEXTGRID_WITHOUT_SOUND
 			endif
 		endif
-	endfor
 
-	# If leading column is used, goto the appropriate section of the script,
-	# else annotate each tier individually:
-	if use_leading_column = 1
-		goto LEADING_COLUMN
-	endif
+		selectObject: sound
+		textGrid = To TextGrid: tier_names$, ""
+		textGrid$ = "'soundNoExt$'.TextGrid"
+		textGridName$ = soundNoExt$
 
-	for .s to .strings
-		.tierToLabel = .tierToLabel'.s'
-		.column$ = .string'.s'$
+		label TEXTGRID_WITHOUT_SOUND
+
+		textGridScreen$ = replace$ (textGrid$, "_", "\_ ", 0)
+		textGridFolder$ = soundFolder$
+		textGridPath$ = textGridFolder$ + textGrid$
+		@AnnotationScreen
+		if choose_labelling_method = 1 or choose_labelling_method = 3
+			goto LABEL_EXISTING_MANUALLY
+		endif
+
+		### Automatic labelling
+		label OVERWRITE_A
+
+		selectObject: textGrid
+		.nTiers = Get number of tiers
+		for .j to .nTiers
+			existingTier'.j'$ = Get tier name: .j
+			numberOfIntervals'.j' = Get number of intervals: .j
+		endfor
+
+		# The @textToStrings proc produces '.strings' - the number of tiers that
+		# are supposed to be labelled, and .string'N'$ - the individual tier
+		# names.
+		.label$ = "CONTINUE"
+		@textToStrings: "labelAnnotation", tier_names$ 
+
+		# If the .label$ variable does not get its value in the @textToStrings
+		# procedure, it has the default value "CONTINUE"
+		goto LABEL_ANNOTATION_'.label$'
+		label LABEL_ANNOTATION_CONTINUE
+
+		# Check whether the tiers specified in the form exist in the TextGrid
+		# and associate the number (.tierToLabel'.s') of the tier with the name:
+		for .s to .strings
+			.tierExists'.s' = 0
+			.tier$ = .string'.s'$
+			for .j to .nTiers
+				if .tier$ = existingTier'.j'$
+					.tierExists'.s' = 1	
+					.tierToLabel'.s' = .j
+				endif
+			endfor
+			if .tierExists'.s' = 0
+				@warning: 2, "AGAIN", "CANCEL", "a", "c", "Tier ""'.tier$'""
+				... does not", "exist in the TextGrid!"
+				goto LABEL_ANNOTATION_'warningOption$'
+			endif
+		endfor
+
+		# Check whether there are the columns with labels in the texts file:
+		selectObject: texts
+		.textRows = Get number of rows
+		.textColumns = Get number of columns
+		for .j to .textColumns
+			.columnLabel'.j'$ = Get column label: .j
+		endfor
+
+		for .s to .strings
+			.columnExists'.s' = 0
+			.column$ = .string'.s'$
+			for .j to .textColumns
+				if .column$ = .columnLabel'.j'$
+					.columnExists'.s' = 1	
+				endif
+			endfor
+			if .columnExists'.s' = 0
+				@warning: 2, "AGAIN", "CANCEL", "a", "c", "Column ""'.column$'"" does not",
+				... "exist in the texts file!"
+				goto LABEL_ANNOTATION_'warningOption$'
+			endif
+		endfor
+
+		# If a leading column is chosen, check whether it exists, and find out what
+		# is the corresponding tier and which rows in the "texts" should be used:
+		if use_leading_column = 1
+			.leading_column = 0
+			for .j to .nTiers
+				if leading_column$ = existingTier'.j'$
+					.leading_column = .j
+				endif
+			endfor
+
+			if .leading_column = 0
+				@warning: 2, "AGAIN", "CANCEL", "a", "c", "Leading column
+				... ""'.column$'"" has no", "corresponding tier in TextGrid!"
+				goto LABEL_ANNOTATION_'warningOption$'
+			endif
+
+			selectObject: texts
+			# Count the total number (.nLabels) and remember the position
+			# (.rwl'.nLabels') of rows which have a label in the leading column:
+			.nLabels = 0
+			for .tr to .textRows
+				.label$ = Get value: .tr, leading_column$
+				if .label$ <> ""
+					.nLabels = .nLabels + 1
+					.rwl'.nLabels' = .tr
+				endif
+			.leadColLabels = .nLabels
+			endfor
+		endif
+
+		# Get all the labels for items in the text file, do it for each tier
+		# individually:
+		for .s to .strings
+			selectObject: texts
+			.tierToLabel = .tierToLabel'.s'
+			.column$ = .string'.s'$
+
+			# If the leading column is used, only get the labels from specific rows:
+			# .rwl'.tr' are the rows which have a label in the leading column:
+			if use_leading_column = 1
+				for .tr to .nLabels
+					label$ = Get value: .rwl'.tr', .column$
+					label_'.column$'_'.tr'$ = label$
+				endfor
+
+			# If no leading column is used, get the labels for each column
+			# individually:
+			else
+				.nLabels = 0
+				for .tr to .textRows
+					label$ = Get value: .tr, .column$
+					if label$ <> "" or include_empty = 1
+						.nLabels = .nLabels + 1
+						label_'.column$'_'.nLabels'$ = label$
+					endif
+				endfor
+			endif
+			.nLabels'.s' = .nLabels
+
+			# Compare the number of empty intervals (or those that should be
+			# overwritten) in the tiers with the number of labels in the text file
+			# and report if they mismatch:
+			if (use_leading_column = 1 and .column$ = leading_column$) or use_leading_column = 0
+
+				selectObject: textGrid
+				if overwrite_old_labels = 1
+					noLabel = Count labels: .tierToLabel, silentIL$
+					empty = numberOfIntervals'.tierToLabel' - noLabel
+				elif overwrite_old_labels = 2
+					empty = numberOfIntervals'.tierToLabel'
+				elif overwrite_old_labels = 3
+					empty = Count labels: .tierToLabel, ""
+				endif
+
+				if .nLabels > empty
+					excessCodes = .nLabels - empty
+					if excessCodes = 1
+						labelsPlSg$ = "label"
+					else
+						labelsPlSg$ = "labels"
+					endif
+					@warning: 2, "IGNORE", "CANCEL", "i", "c", "'excessCodes' more
+					... 'labelsPlSg$' than empty", "intervals in tier ""'.column$'""!"
+					if warningOption$ = "CANCEL"
+						goto LABEL_ANNOTATION_CANCEL
+					endif
+				endif
+			endif
+		endfor
+
+		# If leading column is used, goto the appropriate section of the script,
+		# else annotate each tier individually:
+		if use_leading_column = 1
+			goto LEADING_COLUMN
+		endif
+
+		for .s to .strings
+			.tierToLabel = .tierToLabel'.s'
+			.column$ = .string'.s'$
+			repeated = 0
+			emptyInterval = 0
+			leftEmpty = 0
+			prevOldLabel$ = ""
+
+			# For int from starting_interval to numberOfIntervals
+			for int to numberOfIntervals'.tierToLabel'
+				selectObject: textGrid
+				oldLabel$ = Get label of interval: .tierToLabel, int
+
+				# Skip intervals with 'xxx'; or any non-empty intervals if overwrite
+				# is disabled:
+				if (index (oldLabel$, do_not_overwrite$) <> 0 and overwrite_old_labels = 1) or (oldLabel$ <> "" and overwrite_old_labels = 3)
+					goto DONT_OVERWRITE
+
+				# Items that are repeated several times in a row and are
+				# marked with "repeated_item$" in the annotation, get
+				# the label of the preceding nonrepeated item:
+				elif overwrite_old_labels <> 2 and label_repeated = 1
+				... and (index (oldLabel$, "_'repeated_item$'") <> 0 or oldLabel$ =
+				... repeated_item$)
+				... and (index (prevOldLabel$, "_'repeated_item$'") <> 0 or
+				... prevOldLabel$ = repeated_item$)
+					label NEW_REPEATED_ITEM
+					if emptyInterval > .nLabels'.s'
+						leftEmpty = leftEmpty + 1
+						goto DONT_OVERWRITE
+					endif
+					repeated = repeated + 1
+					Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$ + "_'repeated_item$''repeated'"
+					
+					prevOldLabel$ = oldLabel$
+
+				# This 'elif' resets the "repeated" variable:
+				elif overwrite_old_labels <> 2 and label_repeated = 1
+				... and (index (oldLabel$, "_'repeated_item$'") <> 0 or oldLabel$ =
+				... repeated_item$)
+				... and index (prevOldLabel$, repeated_item$) = 0
+					repeated = 0
+					goto NEW_REPEATED_ITEM
+
+				# Empty intervals get a label from the 'texts' file:
+				else
+					emptyInterval = emptyInterval + 1
+					if emptyInterval > .nLabels'.s'
+						leftEmpty = leftEmpty + 1
+						goto DONT_OVERWRITE
+					endif
+					Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$
+					prevOldLabel$ = oldLabel$
+				endif
+				label DONT_OVERWRITE
+			endfor
+
+			# Report intervals which have not been labelled.
+			# This can mean that the "texts" file or the pause labelling is
+			# incorrect!
+			if leftEmpty > 0
+				@warning: 1, "OK", "", "o", "",
+				... "'leftEmpty' empty intervals in tier ""'.column$'""",
+				... "Check the transcription!"
+			endif
+		endfor
+		goto LABEL_EXISTING_MANUALLY
+
+		label LEADING_COLUMN
+
+		# If the leading column is used, all tiers are labelled according to the
+		# one which corresponds to the leading clumn.
+		# This only works, if all tiers have the same number of equally aligned
+		# intervals!
+		.tierToLabel = .leading_column
 		repeated = 0
 		emptyInterval = 0
 		leftEmpty = 0
 		prevOldLabel$ = ""
 
-		# For int from starting_interval to numberOfIntervals
+		# Go through all the intervals in the "leading tier":
 		for int to numberOfIntervals'.tierToLabel'
 			selectObject: textGrid
 			oldLabel$ = Get label of interval: .tierToLabel, int
 
 			# Skip intervals with 'xxx'; or any non-empty intervals if overwrite
 			# is disabled:
-			if (index (oldLabel$, do_not_overwrite$) <> 0 and overwrite_old_labels = 1) or (oldLabel$ <> "" and overwrite_old_labels = 3)
-				goto DONT_OVERWRITE
+			if (index (oldLabel$, do_not_overwrite$) <> 0 and overwrite_old_labels = 1)
+			... or (oldLabel$ <> "" and overwrite_old_labels = 3)
+				goto DONT_OVERWRITE_LC
 
 			# Items that are repeated several times in a row and are
 			# marked with "repeated_item$" in the annotation, get
@@ -3931,15 +4041,23 @@ procedure labelAnnotation
 			... repeated_item$)
 			... and (index (prevOldLabel$, "_'repeated_item$'") <> 0 or
 			... prevOldLabel$ = repeated_item$)
-				label NEW_REPEATED_ITEM
-				if emptyInterval > .nLabels'.s'
+				label NEW_REPEATED_ITEM_LC
+				if emptyInterval > .leadColLabels
 					leftEmpty = leftEmpty + 1
-					goto DONT_OVERWRITE
+					goto DONT_OVERWRITE_LC
 				endif
 				repeated = repeated + 1
-				Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$ + "_'repeated_item$''repeated'"
-				
+				Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$ + "_'repeated_item$''repeated'"
 				prevOldLabel$ = oldLabel$
+
+				# The text from the remaining tiers gets erased:
+				for .s to .strings
+					if .string'.s'$ <> leading_column$
+						.column$ = .string'.s'$
+						.remainingTier = .tierToLabel'.s'
+						Set interval text: .remainingTier, int, label_'.column$'_'emptyInterval'$
+					endif
+				endfor
 
 			# This 'elif' resets the "repeated" variable:
 			elif overwrite_old_labels <> 2 and label_repeated = 1
@@ -3947,19 +4065,31 @@ procedure labelAnnotation
 			... repeated_item$)
 			... and index (prevOldLabel$, repeated_item$) = 0
 				repeated = 0
-				goto NEW_REPEATED_ITEM
+				goto NEW_REPEATED_ITEM_LC
 
-			# Empty intervals get a label from the 'texts' file:
+			# Empty intervals on the tier corresponding to the leading column
+			# get a label from the 'texts' file:
 			else
 				emptyInterval = emptyInterval + 1
-				if emptyInterval > .nLabels'.s'
+				if emptyInterval > .leadColLabels
 					leftEmpty = leftEmpty + 1
-					goto DONT_OVERWRITE
+					goto DONT_OVERWRITE_LC
 				endif
-				Set interval text: .tierToLabel, int, label_'.column$'_'emptyInterval'$
+				Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$
 				prevOldLabel$ = oldLabel$
+
+				# The remaining tiers are labelled:
+				for .s to .strings
+					if .string'.s'$ <> leading_column$
+						.column$ = .string'.s'$
+						.remainingTier = .tierToLabel'.s'
+						Set interval text: .remainingTier, int, label_'.column$'_'emptyInterval'$
+					endif
+				endfor
+
 			endif
-			label DONT_OVERWRITE
+			label DONT_OVERWRITE_LC
+
 		endfor
 
 		# Report intervals which have not been labelled.
@@ -3967,127 +4097,34 @@ procedure labelAnnotation
 		# incorrect!
 		if leftEmpty > 0
 			@warning: 1, "OK", "", "o", "",
-			... "'leftEmpty' empty intervals in tier ""'.column$'""",
+			... "'leftEmpty' empty intervals in tier ""'leading_column$'""",
 			... "Check the transcription!"
 		endif
-	endfor
-	goto LABEL_EXISTING_MANUALLY
 
-	label LEADING_COLUMN
-
-	# If the leading column is used, all tiers are labelled according to the
-	# one which corresponds to the leading clumn.
-	# This only works, if all tiers have the same number of equally aligned
-	# intervals!
-	.tierToLabel = .leading_column
-	repeated = 0
-	emptyInterval = 0
-	leftEmpty = 0
-	prevOldLabel$ = ""
-
-	# Go through all the intervals in the "leading tier":
-	for int to numberOfIntervals'.tierToLabel'
-		selectObject: textGrid
-		oldLabel$ = Get label of interval: .tierToLabel, int
-
-		# Skip intervals with 'xxx'; or any non-empty intervals if overwrite
-		# is disabled:
-		if (index (oldLabel$, do_not_overwrite$) <> 0 and overwrite_old_labels = 1)
-		... or (oldLabel$ <> "" and overwrite_old_labels = 3)
-			goto DONT_OVERWRITE_LC
-
-		# Items that are repeated several times in a row and are
-		# marked with "repeated_item$" in the annotation, get
-		# the label of the preceding nonrepeated item:
-		elif overwrite_old_labels <> 2 and label_repeated = 1
-		... and (index (oldLabel$, "_'repeated_item$'") <> 0 or oldLabel$ =
-		... repeated_item$)
-		... and (index (prevOldLabel$, "_'repeated_item$'") <> 0 or
-		... prevOldLabel$ = repeated_item$)
-			label NEW_REPEATED_ITEM_LC
-			if emptyInterval > .leadColLabels
-				leftEmpty = leftEmpty + 1
-				goto DONT_OVERWRITE_LC
-			endif
-			repeated = repeated + 1
-			Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$ + "_'repeated_item$''repeated'"
-			prevOldLabel$ = oldLabel$
-
-			# The text from the remaining tiers gets erased:
-			for .s to .strings
-				if .string'.s'$ <> leading_column$
-					.column$ = .string'.s'$
-					.remainingTier = .tierToLabel'.s'
-					Set interval text: .remainingTier, int, label_'.column$'_'emptyInterval'$
-				endif
-			endfor
-
-		# This 'elif' resets the "repeated" variable:
-		elif overwrite_old_labels <> 2 and label_repeated = 1
-		... and (index (oldLabel$, "_'repeated_item$'") <> 0 or oldLabel$ =
-		... repeated_item$)
-		... and index (prevOldLabel$, repeated_item$) = 0
-			repeated = 0
-			goto NEW_REPEATED_ITEM_LC
-
-		# Empty intervals on the tier corresponding to the leading column
-		# get a label from the 'texts' file:
+		# This part selects the TextGrid (and the sound) for Viewing & Editing:
+		label LABEL_EXISTING_MANUALLY
+		if sound <> 0
+			selectObject: textGrid
+			textGrid$ = selected$ ("TextGrid")
+			textGridName$ = textGrid$
+			textGridScreen$ = replace$ (textGrid$, "_", "\_ ", 0) + ".TextGrid"
+			@AnnotationScreen
+			selectObject: sound
+			plusObject: textGrid
+			View & Edit
+			editor: "TextGrid 'textGridName$'"
+			Move cursor to: 0
+			endeditor
 		else
-			emptyInterval = emptyInterval + 1
-			if emptyInterval > .leadColLabels
-				leftEmpty = leftEmpty + 1
-				goto DONT_OVERWRITE_LC
-			endif
-			Set interval text: .tierToLabel, int, label_'leading_column$'_'emptyInterval'$
-			prevOldLabel$ = oldLabel$
-
-			# The remaining tiers are labelled:
-			for .s to .strings
-				if .string'.s'$ <> leading_column$
-					.column$ = .string'.s'$
-					.remainingTier = .tierToLabel'.s'
-					Set interval text: .remainingTier, int, label_'.column$'_'emptyInterval'$
-				endif
-			endfor
-
+			selectObject: textGrid
+			View & Edit alone
+			editor: "TextGrid 'textGridName$'"
+			Move cursor to: 0
+			endeditor
 		endif
-		label DONT_OVERWRITE_LC
 
-	endfor
-
-	# Report intervals which have not been labelled.
-	# This can mean that the "texts" file or the pause labelling is
-	# incorrect!
-	if leftEmpty > 0
-		@warning: 1, "OK", "", "o", "",
-		... "'leftEmpty' empty intervals in tier ""'leading_column$'""",
-		... "Check the transcription!"
+		textGridToSave = 1
 	endif
-
-	# This part selects the TextGrid (and the sound) for Viewing & Editing:
-	label LABEL_EXISTING_MANUALLY
-	if sound <> 0
-		selectObject: textGrid
-		textGrid$ = selected$ ("TextGrid")
-		textGridName$ = textGrid$
-		textGridScreen$ = replace$ (textGrid$, "_", "\_ ", 0) + ".TextGrid"
-		@AnnotationScreen
-		selectObject: sound
-		plusObject: textGrid
-		View & Edit
-		editor: "TextGrid 'textGridName$'"
-		Move cursor to: 0
-		endeditor
-	else
-		selectObject: textGrid
-		View & Edit alone
-		editor: "TextGrid 'textGridName$'"
-		Move cursor to: 0
-		endeditor
-	endif
-
-	textGridToSave = 1
-endif
 	label LABEL_ANNOTATION_CANCEL
 endproc
 
@@ -4166,21 +4203,6 @@ procedure relabel
 	Remove
 	label RELABEL_CANCEL
 endproc
-}
-
-
-procedure saveAnnotation
-	if textGridToSave = 1
-		fileSave$ = chooseWriteFile$: "Save as text file", "'textGridPath$'"
-		if fileSave$ <> ""
-			selectObject: textGrid
-			Save as text file: fileSave$
-		endif
-	else
-		@warning: 1, "OK", "", "o", "", "Nothing to save.", ""
-	endif
-	label SAVE_ANNOTATION_CANCEL
-endproc
 
 
 ############################################################
@@ -4194,10 +4216,9 @@ label FINISHED
 #########
 
 # extracted - speakerCode$
-# save speaker identification for the next session - external pbcrc file?
 # when extracting sounds - insert speakerCode$: warn if there is no speakerCode$
 
-# enable: more than one speakers
+# enable: more than one speaker
 
 # overview of files: show the real updated situation
 
